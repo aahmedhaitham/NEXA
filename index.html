@@ -1390,7 +1390,14 @@
 
   document.getElementById('save-settings-btn').addEventListener('click', async ()=>{
     state.config.settings.creatineTime = document.getElementById('settings-creatine-time').value||'08:00';
-    await save('config', state.config); showToast('Saved.');
+    await save('config', state.config);
+    try{
+      if(Notification.permission==='granted'){
+        const reg=await navigator.serviceWorker.ready;
+        await syncNexaPushSubscription(reg);
+      }
+    }catch(e){ console.error('Reminder sync failed',e); }
+    showToast('Saved.');
   });
   document.getElementById('reset-btn').addEventListener('click', async ()=>{
     if(!confirm('This deletes everything. Continue?')) return;
