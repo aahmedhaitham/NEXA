@@ -494,7 +494,6 @@
             <div class="field"><label>Room / Location</label><input type="text" id="class-in-room" placeholder="e.g. A503"></div>
           </div>
           <div class="grid2">
-            <div class="field"><label>Teacher</label><input type="text" id="class-in-teacher" placeholder="e.g. Dr. Mahran"></div>
             <div class="field"><label>Type</label><select id="class-in-type">
               <option value="lecture">Lecture</option><option value="lab">Lab</option><option value="tutorial">Tutorial</option>
             </select></div>
@@ -1236,7 +1235,6 @@
   function renderClassRow(wrap, c){
     const row = document.createElement('div'); row.className='class-row '+c.type;
     const metaBits = ['ROOM '+escapeHTML(c.room||'-')];
-    if(c.teacher) metaBits.push(escapeHTML(c.teacher));
     row.innerHTML = '<div class="ctime">'+c.start+' \u2013 '+c.end+'</div>' +
       '<div style="flex:1;"><div class="csubject">'+escapeHTML(c.subject)+'</div><div class="croom">'+metaBits.join(' \u00b7 ')+'</div></div>' +
       '<span class="badge '+c.type+'">'+c.type+'</span>';
@@ -1287,18 +1285,17 @@
     const selectedDays = Array.from(document.querySelectorAll('#class-day-picker .exercise-chip.active')).map(b=>b.dataset.day);
     if(!subject || !start || !end || !selectedDays.length){ showToast('Fill in subject, time, and pick at least one day.'); return; }
     const room = document.getElementById('class-in-room').value.trim();
-    const teacher = document.getElementById('class-in-teacher').value.trim();
     const notes = document.getElementById('class-in-notes').value.trim();
     const type = document.getElementById('class-in-type').value;
     selectedDays.forEach((day,i)=>{
-      state.classSchedule.push({id:'c-'+Date.now()+'-'+i, subject, room, teacher, notes, day, type, start, end});
+      state.classSchedule.push({id:'c-'+Date.now()+'-'+i, subject, room, notes, day, type, start, end});
     });
     await save('classSchedule', state.classSchedule);
     if(!state.subjects.find(s=>s.name.toLowerCase()===subject.toLowerCase())){
       state.subjects.push({id:'subj-'+Date.now(), name:subject});
       await save('subjects', state.subjects);
     }
-    ['class-in-subject','class-in-room','class-in-teacher','class-in-notes','class-in-start','class-in-end'].forEach(id=>document.getElementById(id).value='');
+    ['class-in-subject','class-in-room','class-in-notes','class-in-start','class-in-end'].forEach(id=>document.getElementById(id).value='');
     document.querySelectorAll('#class-day-picker .exercise-chip').forEach(b=>b.classList.remove('active'));
     document.getElementById('class-form').style.display='none';
     renderClassesPage(); showToast('Class added, and linked to a Subject automatically.');
@@ -1326,7 +1323,6 @@
       row.style.marginBottom = '8px';
       const metaBits = [];
       if(c.room) metaBits.push('ROOM '+escapeHTML(c.room));
-      if(c.teacher) metaBits.push(escapeHTML(c.teacher));
       row.innerHTML =
         '<div class="ctime">'+c.start+' \u2013 '+c.end+'</div>'+
         '<div style="flex:1;min-width:0;"><div class="csubject">'+escapeHTML(c.subject)+'</div>'+
