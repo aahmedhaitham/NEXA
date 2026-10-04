@@ -9,9 +9,9 @@
 <meta name="apple-mobile-web-app-title" content="Nexa">
 <meta name="theme-color" content="#0B0C10">
 <meta name="color-scheme" content="dark">
-<link rel="apple-touch-icon" href="./icon.svg">
-<link rel="icon" type="image/svg+xml" href="./icon.svg">
-<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="manifest" href="manifest.webmanifest">
 <title>Nexa</title>
 <style>
   :root{
@@ -23,7 +23,7 @@
     font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',Roboto,Helvetica,Arial,sans-serif;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{margin:0;padding:0;height:100%;min-height:100%;width:100%;overflow:hidden;background:#0B0C10;
+  html,body{margin:0;padding:0;height:100%;width:100%;overflow:hidden;position:fixed;inset:0;
     background:
       radial-gradient(circle at 12% 6%, rgba(255,90,43,0.10) 0%, rgba(255,90,43,0) 35%),
       radial-gradient(circle at 88% 92%, rgba(77,163,255,0.09) 0%, rgba(77,163,255,0) 38%),
@@ -37,10 +37,9 @@
   a{color:var(--blue);}
   ::-webkit-scrollbar{display:none;}
 
-  .app-shell{position:fixed;top:0;right:0;bottom:0;left:0;width:100%;min-height:100%;display:flex;flex-direction:column;
-    background:#0B0C10;}
-  .main{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
-    padding:calc(8px + env(safe-area-inset-top,0px)) 18px 18px;}
+  .app-shell{position:fixed;inset:0;display:flex;flex-direction:column;}
+  .main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    padding:calc(20px + env(safe-area-inset-top,0px)) 18px calc(96px + env(safe-area-inset-bottom,0px));}
   .page{display:none;}
   .page.active{display:block;animation:fadein .18s ease;}
   @keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
@@ -53,8 +52,7 @@
   .tabbar{display:flex;justify-content:space-around;align-items:center;
     background:rgba(255,255,255,0.10);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);
     border-top:1px solid rgba(255,255,255,0.18);box-shadow:inset 0 1px 0 rgba(255,255,255,0.15);
-    padding:7px 4px calc(10px + env(safe-area-inset-bottom,0px));margin-bottom:0;z-index:100;flex-shrink:0;
-    background:#20242c;}
+    padding:7px 4px calc(7px + env(safe-area-inset-bottom,0px));z-index:100;flex-shrink:0;}
   .tabitem{background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:2px;
     color:var(--muted);font-size:10.5px;font-weight:600;padding:4px 8px;cursor:pointer;flex:1;font-family:inherit;}
   .tabitem svg{flex-shrink:0;}
@@ -461,21 +459,6 @@
             <div class="field"><label>Time</label><input type="time" id="settings-creatine-time"></div>
             <button class="btn green" id="save-settings-btn">Save</button>
           </div>
-          <div class="card" id="notification-settings-card">
-            <h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Notifications</h3>
-            <p id="notification-status" style="margin-bottom:12px;">Enable reminders from Nexa.</p>
-            <button class="btn" id="enable-notifications-btn" style="margin-bottom:14px;">Enable notifications</button>
-            <div class="grid2">
-              <div class="field"><label>Class reminder</label><select id="notif-class-lead"><option value="5">5 min before</option><option value="10">10 min before</option><option value="15" selected>15 min before</option><option value="30">30 min before</option></select></div>
-              <div class="field"><label>Tasks due today</label><input type="time" id="notif-task-time" value="09:00"></div>
-            </div>
-            <div class="grid2">
-              <div class="field"><label>Workout reminder</label><input type="time" id="notif-workout-time" value="17:30"></div>
-              <div class="field"><label>Reminders</label><select id="notif-enabled"><option value="on">On</option><option value="off">Off</option></select></div>
-            </div>
-            <button class="btn secondary small" id="save-notifications-btn">Save notification settings</button>
-            <p style="margin-top:10px;font-size:11px;">On iPhone, install Nexa to the Home Screen and allow notifications. Local reminders are checked while Nexa is running; fully closed-app delivery requires web push from a server.</p>
-          </div>
           <div class="card">
             <h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Export data (CSV)</h3>
             <div style="display:flex;flex-wrap:wrap;gap:8px;">
@@ -558,7 +541,7 @@
     'tab-home':'<svg width="{{S}}" height="{{S}}" viewBox="0 0 24 24" fill="none"><path d="M4 10.5L12 4l8 6.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 9.5V19a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V9.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"/><path d="M10 20v-5h4v5" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>',
     'tab-tasks':'<svg width="{{S}}" height="{{S}}" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="5" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M8 12.2l2.3 2.3L16 9" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     'tab-train':'<svg width="{{S}}" height="{{S}}" viewBox="0 0 24 24" fill="none"><path d="M4 10v4M20 10v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="1.5" y="9" width="3.2" height="6" rx="1.2" fill="currentColor"/><rect x="19.3" y="9" width="3.2" height="6" rx="1.2" fill="currentColor"/><path d="M7 12h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
-    'tab-health':'<svg width="{{S}}" height="{{S}}" viewBox="0 0 24 24" fill="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    'tab-health':'<svg width="{{S}}" height="{{S}}" viewBox="0 0 24 24" fill="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>',
     'tab-habits':'<svg width="{{S}}" height="{{S}}" viewBox="0 0 24 24" fill="none"><path d="M12 3c1 3-3 4.5-3 8a3 3 0 0 0 6 0c0-1-0.5-2-0.5-2c1.5 1 2.5 3 2.5 5a5 5 0 0 1-10 0c0-4.5 3.5-6 5-11z" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"/></svg>',
     'tab-more':'<svg width="{{S}}" height="{{S}}" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" fill="none"/><circle cx="8" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="16" cy="12" r="1.3" fill="currentColor"/></svg>',
     dashboard:'<svg width="{{S}}" height="{{S}}" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="8" height="8" rx="2" fill="currentColor"/><rect x="13" y="3" width="8" height="5" rx="2" fill="currentColor"/><rect x="13" y="10" width="8" height="11" rx="2" fill="currentColor"/><rect x="3" y="13" width="8" height="8" rx="2" fill="currentColor"/></svg>',
@@ -594,7 +577,6 @@
     state.config = await safeGet('config', {plan:DEFAULT_PLAN, settings:{creatineTime:'08:00'}, creatine:{}, dashboardOrder:['classes','train','nutrition','habits','tasks','calendar','prayer','creatine'], dashboardVisibility:{}});
     if(!state.config.plan) state.config.plan = DEFAULT_PLAN;
     if(!state.config.settings) state.config.settings = {creatineTime:'08:00'};
-    if(!state.config.settings.notifications) state.config.settings.notifications = {enabled:true,classLead:15,taskTime:'09:00',workoutTime:'17:30'};
     if(!state.config.creatine) state.config.creatine = {};
     if(!state.config.dashboardOrder) state.config.dashboardOrder = ['classes','train','nutrition','habits','tasks','calendar','prayer','creatine'];
     if(!state.config.dashboardVisibility) state.config.dashboardVisibility = {};
@@ -1015,7 +997,6 @@
       await save('habitLogs', state.habitLogs); renderHabitGrid(); renderStatbar();
     }));
   }
-
 
   // ---------- NUTRITION PAGE ----------
   function renderNutritionPage(){
@@ -1442,56 +1423,6 @@
     downloadCSV('classes.csv', rows);
   });
 
-  // ---------- notifications ----------
-  function notificationSettings(){
-    return state.config.settings.notifications || {enabled:true,classLead:15,taskTime:'09:00',workoutTime:'17:30'};
-  }
-  function updateNotificationUI(){
-    const ns=notificationSettings();
-    const lead=document.getElementById('notif-class-lead'), task=document.getElementById('notif-task-time'), workout=document.getElementById('notif-workout-time'), enabled=document.getElementById('notif-enabled');
-    if(lead) lead.value=String(ns.classLead||15); if(task) task.value=ns.taskTime||'09:00'; if(workout) workout.value=ns.workoutTime||'17:30'; if(enabled) enabled.value=ns.enabled===false?'off':'on';
-    const st=document.getElementById('notification-status');
-    if(st) st.textContent = !('Notification' in window) ? 'Notifications are not supported in this browser.' : Notification.permission==='granted' ? 'Notifications are allowed on this device.' : Notification.permission==='denied' ? 'Notifications are blocked. Enable them in iPhone Settings for Nexa.' : 'Enable reminders from Nexa.';
-  }
-  async function requestNexaNotifications(){
-    if(!('Notification' in window)){ showToast('Notifications are not supported here.'); return; }
-    try{
-      const permission=await Notification.requestPermission(); updateNotificationUI();
-      if(permission==='granted'){ showToast('Nexa notifications enabled'); await sendNexaNotification('Notifications enabled','Nexa can now remind you about classes, tasks and workouts.','welcome'); }
-      else showToast('Notification permission was not granted');
-    }catch(e){ showToast('Could not enable notifications'); }
-  }
-  async function sendNexaNotification(title, body, tag){
-    if(!('Notification' in window) || Notification.permission!=='granted') return;
-    const opts={body,icon:'./icon.svg',badge:'./icon.svg',tag:'nexa-'+tag,renotify:false,data:{url:'./index.html'}};
-    try{ if('serviceWorker' in navigator){ const reg=await navigator.serviceWorker.ready; await reg.showNotification(title,opts); } else new Notification(title,opts); }catch(e){ console.warn('Notification failed',e); }
-  }
-  function minutesOf(t){ const [h,m]=(t||'00:00').split(':').map(Number); return h*60+m; }
-  function dayCodeFor(d){ return ['sun','mon','tue','wed','thu','fri','sat'][d.getDay()]; }
-  async function checkNexaReminders(){
-    const ns=notificationSettings(); if(ns.enabled===false || !('Notification' in window) || Notification.permission!=='granted') return;
-    const now=new Date(), key=dateKey(now), mins=now.getHours()*60+now.getMinutes(), day=dayCodeFor(now);
-    let sent=await safeGet('notificationSent',{}); let changed=false;
-    // Classes: notify once when within ~1 minute of configured lead time.
-    for(const c of state.classSchedule){
-      if(c.day!==day && c.day!=='daily') continue;
-      const diff=minutesOf(c.start)-mins, lead=Number(ns.classLead||15), id='class:'+key+':'+c.id;
-      if(diff<=lead && diff>=lead-1 && !sent[id]){ await sendNexaNotification((c.subject||'Class')+' in '+lead+' minutes', [c.subject,c.room].filter(Boolean).join(' · ')+(c.start?' · '+c.start:''), id); sent[id]=Date.now(); changed=true; }
-    }
-    // Tasks: one daily summary at configured time.
-    const taskId='tasks:'+key, taskAt=minutesOf(ns.taskTime||'09:00');
-    if(mins>=taskAt && mins<taskAt+2 && !sent[taskId]){
-      const due=state.tasks.filter(t=>!t.done && t.dueDate===key); if(due.length){ const first=due[0]; await sendNexaNotification(due.length===1?'Task due today':due.length+' tasks due today', due.length===1?first.title:first.title+' + '+(due.length-1)+' more',taskId); sent[taskId]=Date.now(); changed=true; }
-    }
-    // Workout: daily reminder when today's plan has a workout.
-    const workoutId='workout:'+key, workoutAt=minutesOf(ns.workoutTime||'17:30');
-    if(mins>=workoutAt && mins<workoutAt+2 && !sent[workoutId]){
-      const plan=state.config.plan||{}; const todays=plan[day];
-      if(todays && String(todays).toLowerCase()!=='rest'){ await sendNexaNotification('Workout today', 'Your '+String(todays)+' workout is scheduled for '+(ns.workoutTime||'17:30')+'.',workoutId); sent[workoutId]=Date.now(); changed=true; }
-    }
-    if(changed){ Object.keys(sent).forEach(k=>{ if(sent[k] < Date.now()-14*86400000) delete sent[k]; }); await save('notificationSent',sent); }
-  }
-
   // ---------- init ----------
   async function init(){
     await loadAll();
@@ -1499,25 +1430,13 @@
     document.getElementById('settings-creatine-time').value = state.config.settings.creatineTime||'08:00';
     renderTabbar();
     wireSubtabs();
-    updateNotificationUI();
-    const en=document.getElementById('enable-notifications-btn'); if(en) en.addEventListener('click', requestNexaNotifications);
-    const sn=document.getElementById('save-notifications-btn'); if(sn) sn.addEventListener('click', async ()=>{ state.config.settings.notifications={enabled:document.getElementById('notif-enabled').value==='on',classLead:Number(document.getElementById('notif-class-lead').value),taskTime:document.getElementById('notif-task-time').value||'09:00',workoutTime:document.getElementById('notif-workout-time').value||'17:30'}; await save('config',state.config); showToast('Notification settings saved'); checkNexaReminders(); });
     document.getElementById('loading').style.display='none';
     document.getElementById('shell').style.display='flex';
     renderDashboard();
     setInterval(()=>{ if(document.getElementById('page-today').classList.contains('active')) renderDashboard(); }, 60000);
-    checkNexaReminders(); setInterval(checkNexaReminders,30000);
   }
   init();
 })();
-</script>
-
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js').catch(err => console.warn('Service worker registration failed:', err));
-  });
-}
 </script>
 </body>
 </html>
