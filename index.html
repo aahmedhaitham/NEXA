@@ -11,7 +11,8 @@
 <meta name="color-scheme" content="dark">
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=3">
 <link rel="icon" type="image/png" href="./icon-192.png?v=3">
-<link rel="manifest" href="manifest.webmanifest">\n<script src="./push-config.js"></script>
+<link rel="manifest" href="manifest.webmanifest">
+<script src="./push-config.js"></script>
 <title>Nexa</title>
 <style>
   :root{
@@ -607,7 +608,8 @@
   }
 
   // ---------- prayer times ----------
-  const LAT=30.0444, LNG=31.2357;\n  const TZ=-(new Date().getTimezoneOffset()/60);
+  const LAT=30.0444, LNG=31.2357;
+  const TZ=-(new Date().getTimezoneOffset()/60);
   function deg(x){return x*Math.PI/180;} function rad(x){return x*180/Math.PI;} function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
   function dayOfYear(d){ return Math.floor((d - new Date(d.getFullYear(),0,0))/86400000); }
   function calcPrayerTimes(date){
