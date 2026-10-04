@@ -75,7 +75,7 @@
 
   /* Nexa v2 visible app polish */
   .page-head h1{font-size:34px;letter-spacing:-.045em;}
-  .statbar{grid-template-columns:repeat(2,1fr);gap:12px;}
+  .statbar{grid-template-columns:repeat(3,1fr);gap:10px;}
   .statcell{padding:17px 15px;border-radius:20px;}
   .statcell .num{font-size:27px;}
   .widget{border-radius:22px;padding:17px;}
@@ -147,6 +147,10 @@
   .statcell .num{font-size:22px;font-weight:800;letter-spacing:-0.02em;}
   .statcell .lbl{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.03em;margin-top:2px;}
 
+
+  .stat-action{font-family:inherit;color:inherit;text-align:left;cursor:pointer;appearance:none;width:100%;}
+  .stat-action:active{transform:scale(.97);background:rgba(255,255,255,.16);}
+  @media(max-width:360px){.statbar{gap:7px}.statcell{padding:14px 9px}.statcell .num{font-size:23px}.statcell .lbl{font-size:9px}}
   .widget-grid{display:flex;flex-direction:column;gap:14px;}
   .widget{background:var(--panel);backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);
     border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.25), 0 8px 20px rgba(0,0,0,0.25);}
@@ -756,11 +760,13 @@
     const tasksOpen = state.tasks.filter(t=>!t.done).length;
     const wrap = document.getElementById('statbar');
     wrap.innerHTML = '';
-    [['Open tasks',tasksOpen],['Habits today',doneToday+'/'+state.habits.length]]
-      .forEach(([lbl,num])=>{
-        const c = document.createElement('div'); c.className='statcell';
-        c.innerHTML = '<div class="num">'+num+'</div><div class="lbl">'+lbl+'</div>';
-        wrap.appendChild(c);
+    const todayClasses = state.classSchedule.filter(c=>c.day===todayDayCode()||c.day==='daily').length;
+    [['Classes today',todayClasses,'settings','classes'],['Open tasks',tasksOpen,'tasks',null],['Habits today',doneToday+'/'+state.habits.length,'health','habits']]
+      .forEach(([lbl,num,page,sub])=>{
+        const cell = document.createElement('button'); cell.className='statcell stat-action'; cell.type='button';
+        cell.innerHTML = '<div class="num">'+num+'</div><div class="lbl">'+lbl+'</div>';
+        cell.addEventListener('click',()=>{ navigate(page); if(sub){setTimeout(()=>{ const b=document.querySelector('#'+page+'-subtabs [data-sub="'+sub+'"]'); if(b)b.click(); },0);} });
+        wrap.appendChild(cell);
       });
   }
   const WIDGET_DEFS = {
