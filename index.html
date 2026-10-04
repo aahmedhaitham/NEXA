@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Nexa">
 <meta name="theme-color" content="#222833">
 <meta name="color-scheme" content="dark">
@@ -31,7 +31,7 @@
   a{color:var(--blue);}
   ::-webkit-scrollbar{display:none;}
 
-  .app-shell{height:100vh;width:calc(100% + env(safe-area-inset-left,0px) + env(safe-area-inset-right,0px));margin-left:calc(-1 * env(safe-area-inset-left,0px));display:flex;flex-direction:column;background:var(--bg);overflow:hidden;}
+  .app-shell{height:100vh;width:100vw;display:flex;flex-direction:column;background:var(--bg);overflow:hidden;}
   .main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
     padding:calc(20px + env(safe-area-inset-top,0px)) 18px 96px;}
   .page{display:none;}
