@@ -1,8 +1,8 @@
-const CACHE='nexa-v10';
+const CACHE='nexa-v11';
 const APP_SHELL=['./','./index.html','./manifest.webmanifest','./apple-touch-icon.png','./icon-192.png','./icon-512.png','./push-config.js'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(c=>c.addAll(APP_SHELL)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
-self.addEventListener('fetch',event=>{if(event.request.method!=='GET')return;event.respondWith(fetch(event.request).then(r=>{const copy=r.clone();caches.open(CACHE).then(c=>c.put(event.request,copy));return r;}).catch(()=>caches.match(event.request).then(r=>r||caches.match('./index.html'))));});
+self.addEventListener('fetch',event=>{if(event.request.method!=='GET')return;const req=event.request;if(req.mode==='navigate'){event.respondWith(fetch(req).then(r=>{const copy=r.clone();caches.open(CACHE).then(c=>c.put('./index.html',copy));return r;}).catch(()=>caches.match('./index.html')));return;}event.respondWith(caches.match(req).then(cached=>cached||fetch(req).then(r=>{if(r&&r.ok){const copy=r.clone();caches.open(CACHE).then(c=>c.put(req,copy));}return r;})));});
 self.addEventListener('push',event=>{let data={};try{data=event.data?event.data.json():{};}catch(_){data={body:event.data?event.data.text():''};}
 event.waitUntil(self.registration.showNotification(data.title||'Nexa',{body:data.body||'You have a reminder.',icon:'./icon-192.png',badge:'./icon-192.png',tag:data.tag||'nexa-reminder',data:{url:data.url||'./'}}));});
 self.addEventListener('notificationclick',event=>{event.notification.close();const target=new URL((event.notification.data&&event.notification.data.url)||'./',self.registration.scope).href;
