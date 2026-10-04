@@ -297,7 +297,6 @@
         <button class="subtab active" data-sub="training">Training</button>
         <button class="subtab" data-sub="nutrition">Nutrition</button>
         <button class="subtab" data-sub="habits">Habits</button>
-        <button class="subtab" data-sub="vitals">Vitals</button>
       </div>
 
       <div class="subpage active" data-group="health" id="health-sub-training">
@@ -381,32 +380,6 @@
         </div>
         <div class="card"><div id="habit-grid"></div></div>
       </div>
-
-      <div class="subpage" data-group="health" id="health-sub-vitals">
-        <p style="margin-bottom:12px;">Import your Apple Health export for steps, sleep, weight.</p>
-        <div class="card">
-          <p>On your iPhone: Health app \u2192 profile icon \u2192 Export All Health Data. AirDrop or transfer the resulting zip to this PC, unzip it, then select the <b>export.xml</b> file inside.</p>
-          <div class="field" style="margin-top:10px;"><input type="file" id="health-file-input" accept=".xml"></div>
-          <button class="btn secondary" id="health-import-btn">Import</button>
-          <p id="health-import-status" style="margin-top:8px;"></p>
-        </div>
-        <div class="cols" id="health-results" style="display:none;">
-          <div class="card">
-            <h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Steps (last 14 days)</h3>
-            <table><thead><tr><th>Date</th><th>Steps</th></tr></thead><tbody id="health-steps-table"></tbody></table>
-          </div>
-          <div>
-            <div class="card">
-              <h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Sleep (last 14 days)</h3>
-              <table><thead><tr><th>Date</th><th>Hours</th></tr></thead><tbody id="health-sleep-table"></tbody></table>
-            </div>
-            <div class="card">
-              <h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Weight history</h3>
-              <table><thead><tr><th>Date</th><th>Weight (kg)</th></tr></thead><tbody id="health-weight-table"></tbody></table>
-            </div>
-          </div>
-        </div>
-      </div>
     </section>
 
     <!-- CALENDAR -->
@@ -466,16 +439,6 @@
             <h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Notifications</h3>
             <p id="notification-status">Notifications are off.</p>
             <button class="btn secondary" id="enable-notifications-btn">Enable notifications</button>
-          </div>
-          <div class="card">
-            <h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Export data (CSV)</h3>
-            <div style="display:flex;flex-wrap:wrap;gap:8px;">
-              <button class="btn secondary small" id="export-workouts">Workouts</button>
-              <button class="btn secondary small" id="export-nutrition">Nutrition</button>
-              <button class="btn secondary small" id="export-tasks">Tasks</button>
-              <button class="btn secondary small" id="export-habits">Habits</button>
-              <button class="btn secondary small" id="export-classes">Classes</button>
-            </div>
           </div>
           <div class="card">
             <h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Danger zone</h3>
@@ -677,7 +640,6 @@
       if(sub==='training'){ renderExerciseChips(); renderProgressSelect(); renderRecentSets(); renderPlanEditor(); }
       if(sub==='nutrition') renderNutritionPage();
       if(sub==='habits') renderHabitGrid();
-      if(sub==='vitals') renderHealthPage();
     }
     if(group==='settings'){
       if(sub==='classes') renderClassesPage();
@@ -1097,74 +1059,6 @@
     });
   }
 
-  // ---------- HEALTH ----------
-  document.getElementById('health-import-btn').addEventListener('click', async ()=>{
-    const fileInput = document.getElementById('health-file-input');
-    const status = document.getElementById('health-import-status');
-    if(!fileInput.files.length){ status.textContent = 'Choose your export.xml file first.'; return; }
-    status.textContent = 'Parsing... this can take a minute for large exports.';
-    try{
-      const text = await fileInput.files[0].text();
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(text, 'text/xml');
-      const records = doc.getElementsByTagName('Record');
-      const steps = {}, sleepMinutes = {}, weight = [];
-      for(let i=0;i<records.length;i++){
-        const r = records[i];
-        const type = r.getAttribute('type');
-        const startDate = (r.getAttribute('startDate')||'').slice(0,10);
-        if(!startDate) continue;
-        if(type==='HKQuantityTypeIdentifierStepCount'){
-          steps[startDate] = (steps[startDate]||0) + parseFloat(r.getAttribute('value')||0);
-        } else if(type==='HKCategoryTypeIdentifierSleepAnalysis'){
-          const s = new Date(r.getAttribute('startDate')), e = new Date(r.getAttribute('endDate'));
-          const mins = (e-s)/60000;
-          if(mins>0) sleepMinutes[startDate] = (sleepMinutes[startDate]||0) + mins;
-        } else if(type==='HKQuantityTypeIdentifierBodyMass'){
-          let val = parseFloat(r.getAttribute('value')||0);
-          const unit = r.getAttribute('unit')||'';
-          if(unit.toLowerCase().includes('lb')) val = val*0.453592;
-          weight.push({date:startDate, kg:Math.round(val*10)/10});
-        }
-      }
-      const sleep = {}; Object.keys(sleepMinutes).forEach(d=>{ sleep[d] = Math.round((sleepMinutes[d]/60)*10)/10; });
-      state.health = {steps, sleep, weight};
-      await save('health', state.health);
-
-      const stepsGoal = 8000;
-      Object.keys(steps).forEach(d=>{
-        if(steps[d] >= stepsGoal){ if(!state.habitLogs[d]) state.habitLogs[d]={}; if(state.habits.find(h=>h.id==='h-steps')) state.habitLogs[d]['h-steps']=true; }
-      });
-      Object.keys(sleep).forEach(d=>{
-        if(sleep[d] >= 7){ if(!state.habitLogs[d]) state.habitLogs[d]={}; if(state.habits.find(h=>h.id==='h-sleep')) state.habitLogs[d]['h-sleep']=true; }
-      });
-      await save('habitLogs', state.habitLogs);
-
-      status.textContent = 'Imported ' + Object.keys(steps).length + ' days of steps, ' + Object.keys(sleep).length + ' nights of sleep, ' + weight.length + ' weight entries.';
-      renderHealthPage();
-    }catch(e){
-      status.textContent = 'Could not parse that file. Make sure it\'s the export.xml from your Health export.';
-      console.error(e);
-    }
-  });
-  function renderHealthPage(){
-    const hasData = Object.keys(state.health.steps).length || Object.keys(state.health.sleep).length || state.health.weight.length;
-    document.getElementById('health-results').style.display = hasData ? 'grid' : 'none';
-    if(!hasData) return;
-    const stepsTable = document.getElementById('health-steps-table'); stepsTable.innerHTML='';
-    Object.keys(state.health.steps).sort().reverse().slice(0,14).forEach(d=>{
-      const tr = document.createElement('tr'); tr.innerHTML = '<td>'+d+'</td><td>'+Math.round(state.health.steps[d])+'</td>'; stepsTable.appendChild(tr);
-    });
-    const sleepTable = document.getElementById('health-sleep-table'); sleepTable.innerHTML='';
-    Object.keys(state.health.sleep).sort().reverse().slice(0,14).forEach(d=>{
-      const tr = document.createElement('tr'); tr.innerHTML = '<td>'+d+'</td><td>'+state.health.sleep[d]+'h</td>'; sleepTable.appendChild(tr);
-    });
-    const weightTable = document.getElementById('health-weight-table'); weightTable.innerHTML='';
-    state.health.weight.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,14).forEach(w=>{
-      const tr = document.createElement('tr'); tr.innerHTML = '<td>'+w.date+'</td><td>'+w.kg+' kg</td>'; weightTable.appendChild(tr);
-    });
-  }
-
   // ---------- SUBJECTS (Today home page) ----------
   function renderSubjectsPage(){
     const wrap = document.getElementById('subjects-list');
@@ -1422,32 +1316,6 @@
       config:{plan:Object.assign({},DEFAULT_PLAN), settings:{creatineTime:'08:00'}, creatine:{}, dashboardOrder:['classes','train','nutrition','habits','tasks','calendar','prayer','creatine'], dashboardVisibility:{}}};
     for(const k of ['exercises','logs','events','nutrition','projects','tasks','habits','habitLogs','classSchedule','subjects','subjectItems','health','config']) await save(k, state[k]);
     showToast('All data reset.'); gotoPage('today');
-  });
-
-  document.getElementById('export-workouts').addEventListener('click', ()=>{
-    const rows=[['Date','Exercise','Category','Weight (kg)','Reps']];
-    state.logs.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=>{ rows.push([l.date, l.name, l.category, l.weight, l.reps]); });
-    downloadCSV('workouts.csv', rows);
-  });
-  document.getElementById('export-nutrition').addEventListener('click', ()=>{
-    const rows=[['Date','Calories','Protein','Carbs','Fat']];
-    Object.keys(state.nutrition).sort().forEach(d=>{ const n=state.nutrition[d]; rows.push([d,n.calories,n.protein,n.carbs,n.fat]); });
-    downloadCSV('nutrition.csv', rows);
-  });
-  document.getElementById('export-tasks').addEventListener('click', ()=>{
-    const rows=[['Title','Project','Due Date','Priority','Done','Subtasks']];
-    state.tasks.forEach(t=>{ const p=state.projects.find(x=>x.id===t.projectId); rows.push([t.title, p?p.name:'Inbox', t.dueDate||'', t.priority, t.done?'yes':'no', (t.subtasks||[]).map(s=>s.title+(s.done?' (done)':'')).join(' | ')]); });
-    downloadCSV('tasks.csv', rows);
-  });
-  document.getElementById('export-habits').addEventListener('click', ()=>{
-    const rows=[['Date','Habit','Done']];
-    Object.keys(state.habitLogs).sort().forEach(d=>{ Object.keys(state.habitLogs[d]).forEach(hid=>{ if(state.habitLogs[d][hid]){ const h=state.habits.find(x=>x.id===hid); rows.push([d, h?h.name:hid, 'yes']); } }); });
-    downloadCSV('habits.csv', rows);
-  });
-  document.getElementById('export-classes').addEventListener('click', ()=>{
-    const rows=[['Day','Start','End','Subject','Room','Type']];
-    state.classSchedule.forEach(c=>rows.push([c.day, c.start, c.end, c.subject, c.room, c.type]));
-    downloadCSV('classes.csv', rows);
   });
 
   // ---------- init ----------
