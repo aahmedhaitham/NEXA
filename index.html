@@ -39,6 +39,39 @@
       #0B0C10;}
   .main{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
     padding:calc(20px + env(safe-area-inset-top,0px)) 18px calc(96px + env(safe-area-inset-bottom,0px));}
+
+  /* Nexa native-style polish */
+  :root{--surface:#17191e;--surface2:#1d2026;--hairline:rgba(255,255,255,.11);}
+  .main{padding-left:16px;padding-right:16px;}
+  .page-head{margin-bottom:20px;}
+  .page-head h1{font-size:32px;line-height:1.08;font-weight:800;}
+  .page-head p{font-size:14px;margin-top:6px;}
+  .statbar{gap:10px;margin-bottom:22px;}
+  .statcell,.widget,.card,.more-list{background:var(--surface);border-color:var(--hairline);-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 8px 24px rgba(0,0,0,.18);}
+  .statcell{padding:15px 14px;border-radius:17px;}
+  .statcell .num{font-size:24px;}
+  .widget-grid{gap:16px;}
+  .widget{border-radius:20px;padding:16px;}
+  .widget-head{margin-bottom:12px;}
+  .widget-head h3{font-size:13px;color:#a6abb5;letter-spacing:.035em;}
+  .class-row,.course-card{background:var(--surface2);border-color:var(--hairline);-webkit-backdrop-filter:none;backdrop-filter:none;}
+  .class-row{border-radius:15px;padding:13px 14px;}
+  .class-row .csubject{font-size:15px;}
+  .class-row .croom{margin-top:3px;}
+  .badge{background:rgba(255,255,255,.055);border-color:rgba(255,255,255,.18);border-radius:9px;}
+  .btn{border-radius:13px;min-height:44px;}
+  .btn.small{min-height:36px;}
+  select,input[type=text],input[type=number],input[type=time],input[type=date],textarea{background:var(--surface2);border-color:var(--hairline);min-height:46px;}
+  .subtabs{background:var(--surface2);border:1px solid var(--hairline);}
+  .subtab{min-height:40px;}
+  .subtab.active{background:rgba(255,255,255,.13);}
+  .tabbar{background:rgba(20,23,29,.94);border-top-color:var(--hairline);box-shadow:0 -8px 28px rgba(0,0,0,.18);-webkit-backdrop-filter:blur(22px) saturate(150%);backdrop-filter:blur(22px) saturate(150%);}
+  .tabitem{min-height:48px;transition:color .15s ease,transform .1s ease;}
+  .tabitem:active{transform:scale(.94);}
+  .more-row{min-height:52px;}
+  .widget-hide,.checkbtn,.more-row,.subtab{touch-action:manipulation;}
+  @media(max-width:520px){.widget{padding:15px}.main{padding-left:16px;padding-right:16px}}
+
   .page{display:none;}
   .page.active{display:block;animation:fadein .18s ease;}
   @keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
