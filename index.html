@@ -751,7 +751,13 @@
   }
   function renderWidgetCalendar(el){
     const upcoming = state.events.filter(e=>e.date && e.date>=todayKey()).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,5);
-    el.innerHTML = upcoming.length ? upcoming.map(e=>'<div class="row" style="padding:5px 0;"><span style="font-size:13px;">'+escapeHTML(e.title)+'</span><span style="font-size:11px;color:var(--muted);">'+e.date+'</span></div>').join('') : '<p>Nothing scheduled.</p>';
+    el.innerHTML = upcoming.length ? upcoming.map(e=>{
+      const d=new Date(e.date+'T12:00:00');
+      const day=d.toLocaleDateString('en-US',{day:'numeric'});
+      const mon=d.toLocaleDateString('en-US',{month:'short'}).toUpperCase();
+      const when=e.date===todayKey()?'TODAY':d.toLocaleDateString('en-US',{weekday:'short'}).toUpperCase();
+      return '<div class="class-row" style="margin-bottom:8px;"><div style="width:48px;text-align:center;flex-shrink:0;"><div style="font-size:18px;font-weight:800;color:var(--ink);line-height:1;">'+day+'</div><div style="font-size:10px;font-weight:700;color:var(--coral);margin-top:4px;">'+mon+'</div></div><div style="flex:1;min-width:0;"><div class="csubject">'+escapeHTML(e.title)+'</div><div class="croom">'+when+(e.type?' · '+escapeHTML(e.type).toUpperCase():'')+'</div></div></div>';
+    }).join('') : '<p>Nothing scheduled.</p>';
   }
   function renderWidgetPrayer(el){
     const {times,order,nextKey,nextDiff} = getNextPrayer();
