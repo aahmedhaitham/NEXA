@@ -11,7 +11,7 @@
 <meta name="color-scheme" content="dark">
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=2">
 <link rel="icon" type="image/png" href="logo.png">
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="manifest" href="manifest.webmanifest">\n<script src="./push-config.js"></script>
 <title>Nexa</title>
 <style>
   :root{
@@ -1444,9 +1444,38 @@
 })();
 
   // ---------- PWA notifications ----------
+  function urlBase64ToUint8Array(base64String){
+    const padding='='.repeat((4-base64String.length%4)%4);
+    const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/');
+    const raw=atob(base64);
+    return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
+  }
+  async function syncNexaPushSubscription(reg){
+    const cfg=window.NEXA_PUSH_CONFIG;
+    if(!cfg?.publicKey || !cfg?.subscribeUrl) throw new Error('Push configuration is missing');
+    let subscription=await reg.pushManager.getSubscription();
+    if(!subscription){
+      subscription=await reg.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey:urlBase64ToUint8Array(cfg.publicKey)
+      });
+    }
+    const creatineTime=(window.state?.config?.settings?.creatineTime) || document.getElementById('settings-creatine-time')?.value || '08:00';
+    const response=await fetch(cfg.subscribeUrl,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        subscription:subscription.toJSON(),
+        timezone:Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+        creatineTime
+      })
+    });
+    if(!response.ok) throw new Error('Could not save push subscription');
+    return subscription;
+  }
   async function setupNexaNotifications(){
     const status=document.getElementById('notification-status');
-    if(!('serviceWorker' in navigator) || !('Notification' in window)){
+    if(!('serviceWorker' in navigator) || !('Notification' in window) || !('PushManager' in window)){
       if(status) status.textContent='Notifications are not supported in this browser.';
       return;
     }
@@ -1454,11 +1483,13 @@
       const reg=await navigator.serviceWorker.register('./service-worker.js');
       const refresh=()=>{ if(status) status.textContent = Notification.permission==='granted' ? 'Notifications are enabled.' : (Notification.permission==='denied' ? 'Notifications are blocked in iPhone settings.' : 'Notifications are off.'); };
       refresh();
+      if(Notification.permission==='granted') await syncNexaPushSubscription(reg);
       const btn=document.getElementById('enable-notifications-btn');
       if(btn) btn.onclick=async()=>{
         const permission=await Notification.requestPermission(); refresh();
         if(permission==='granted'){
-          await reg.showNotification('Nexa notifications are on',{body:'You can now receive Nexa reminders.',icon:'./logo.png',badge:'./logo.png',tag:'nexa-enabled'});
+          await syncNexaPushSubscription(reg);
+          await reg.showNotification('Nexa notifications are on',{body:'Background reminders are connected.',icon:'./logo.png',badge:'./logo.png',tag:'nexa-enabled'});
           showToast('Notifications enabled');
         }
       };
