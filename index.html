@@ -574,7 +574,7 @@
   let calYear, calMonth, calSelectedDate=null, selectedProjectId='inbox';
 
   async function safeGet(key, fallback){ try{ const v=localStorage.getItem('cb_'+key); return v?JSON.parse(v):fallback; }catch(e){ return fallback; } }
-  async function save(key, value){ try{ localStorage.setItem('cb_'+key, JSON.stringify(value)); }catch(e){ console.error(e); } }
+  async function save(key, value){ try{ localStorage.setItem('cb_'+key, JSON.stringify(value)); if(Notification?.permission==='granted' && ['tasks','events','habits','habitLogs','classSchedule','config'].includes(key)){ navigator.serviceWorker.ready.then(r=>syncNexaPushSubscription(r)).catch(()=>{}); } }catch(e){ console.error(e); } }
   async function loadAll(){
     state.exercises = await safeGet('exercises', DEFAULT_EXERCISES);
     state.logs = await safeGet('logs', []);
@@ -607,7 +607,7 @@
   }
 
   // ---------- prayer times ----------
-  const LAT=30.0444, LNG=31.2357, TZ=2;
+  const LAT=30.0444, LNG=31.2357;\n  const TZ=-(new Date().getTimezoneOffset()/60);
   function deg(x){return x*Math.PI/180;} function rad(x){return x*180/Math.PI;} function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
   function dayOfYear(d){ return Math.floor((d - new Date(d.getFullYear(),0,0))/86400000); }
   function calcPrayerTimes(date){
@@ -1474,7 +1474,14 @@
       body:JSON.stringify({
         subscription:subscription.toJSON(),
         timezone:Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-        creatineTime
+        creatineTime,
+        reminderData:{
+          tasks:JSON.parse(localStorage.getItem('cb_tasks')||'[]'),
+          events:JSON.parse(localStorage.getItem('cb_events')||'[]'),
+          habits:JSON.parse(localStorage.getItem('cb_habits')||'[]'),
+          habitLogs:JSON.parse(localStorage.getItem('cb_habitLogs')||'{}'),
+          classes:JSON.parse(localStorage.getItem('cb_classSchedule')||'[]')
+        }
       })
     });
     if(!response.ok) throw new Error('Could not save push subscription');
