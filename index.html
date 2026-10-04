@@ -1315,7 +1315,22 @@
   function renderWidgetClasses(el){
     const day = todayDayCode();
     const classes = state.classSchedule.filter(c=>c.day===day||c.day==='daily').sort((a,b)=>a.start.localeCompare(b.start));
-    el.innerHTML = classes.length ? classes.map(c=>'<div class="row" style="padding:5px 0;"><span style="font-size:13px;">'+escapeHTML(c.subject)+'</span><span style="font-size:11px;color:var(--muted);">'+c.start+'</span></div>').join('') : '<p>No classes today.</p>';
+    el.innerHTML = '';
+    if(!classes.length){ el.innerHTML = '<p>No classes today.</p>'; return; }
+    classes.forEach(c=>{
+      const row = document.createElement('div');
+      row.className = 'class-row '+c.type;
+      row.style.marginBottom = '8px';
+      const metaBits = [];
+      if(c.room) metaBits.push('ROOM '+escapeHTML(c.room));
+      if(c.teacher) metaBits.push(escapeHTML(c.teacher));
+      row.innerHTML =
+        '<div class="ctime">'+c.start+' \u2013 '+c.end+'</div>'+
+        '<div style="flex:1;min-width:0;"><div class="csubject">'+escapeHTML(c.subject)+'</div>'+
+        (metaBits.length?'<div class="croom">'+metaBits.join(' \u00b7 ')+'</div>':'')+'</div>'+
+        '<span class="badge '+c.type+'">'+c.type+'</span>';
+      el.appendChild(row);
+    });
   }
 
   // ---------- wire events ----------
