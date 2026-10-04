@@ -72,6 +72,39 @@
   .widget-hide,.checkbtn,.more-row,.subtab{touch-action:manipulation;}
   @media(max-width:520px){.widget{padding:15px}.main{padding-left:16px;padding-right:16px}}
 
+
+  /* Nexa v2 visible app polish */
+  .page-head h1{font-size:34px;letter-spacing:-.045em;}
+  .statbar{grid-template-columns:repeat(2,1fr);gap:12px;}
+  .statcell{padding:17px 15px;border-radius:20px;}
+  .statcell .num{font-size:27px;}
+  .widget{border-radius:22px;padding:17px;}
+  .widget-head h3{font-size:14px;text-transform:none;letter-spacing:-.01em;color:var(--ink);}
+  .widget-hide{width:34px;height:34px;border-radius:50%;font-size:17px;}
+  .class-row{padding:15px;border-radius:18px;min-height:78px;}
+  .class-row .csubject{font-size:16px;}
+  .class-row .ctime{font-size:13px;}
+  .badge{padding:5px 11px;border-radius:10px;}
+  .card{border-radius:22px;padding:19px;}
+  .day-header{border-radius:16px;padding:12px 16px;}
+  .more-list{border-radius:20px;}
+  .more-row{padding:15px 16px;}
+  .more-row .micon{width:34px;height:34px;border-radius:10px;}
+  .subtabs{border-radius:16px;padding:4px;}
+  .subtab{border-radius:12px;font-size:13px;}
+  .btn{font-weight:700;box-shadow:0 5px 16px rgba(255,90,43,.12);}
+  .btn.secondary,.btn.gray,.btn.green,.btn.ghost{box-shadow:none;}
+  .tabbar{padding-top:9px;}
+  .tabitem{gap:4px;font-size:11px;}
+  .tabitem.active svg{filter:drop-shadow(0 2px 7px rgba(255,90,43,.38));}
+  .tabitem.active span{font-weight:700;}
+  .prayer-item{border-radius:14px;padding:11px 5px;}
+  .task-row{padding:13px 0;}
+  @media(max-width:390px){
+    .page-head h1{font-size:32px}
+    .widget{padding:15px}
+    .class-row{padding:13px}
+  }
   .page{display:none;}
   .page.active{display:block;animation:fadein .18s ease;}
   @keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
