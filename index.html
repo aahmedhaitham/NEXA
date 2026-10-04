@@ -574,7 +574,7 @@
   let calYear, calMonth, calSelectedDate=null, selectedProjectId='inbox';
 
   async function safeGet(key, fallback){ try{ const v=localStorage.getItem('cb_'+key); return v?JSON.parse(v):fallback; }catch(e){ return fallback; } }
-  async function save(key, value){ try{ localStorage.setItem('cb_'+key, JSON.stringify(value)); if(Notification?.permission==='granted' && ['tasks','events','habits','habitLogs','classSchedule','config'].includes(key)){ navigator.serviceWorker.ready.then(r=>syncNexaPushSubscription(r)).catch(()=>{}); } }catch(e){ console.error(e); } }
+  async function save(key, value){ try{ localStorage.setItem('cb_'+key, JSON.stringify(value)); if('Notification' in window && Notification.permission==='granted' && ['tasks','events','habits','habitLogs','classSchedule','config'].includes(key)){ navigator.serviceWorker.ready.then(r=>syncNexaPushSubscription(r)).catch(()=>{}); } }catch(e){ console.error(e); } }
   async function loadAll(){
     state.exercises = await safeGet('exercises', DEFAULT_EXERCISES);
     state.logs = await safeGet('logs', []);
