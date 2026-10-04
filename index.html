@@ -460,6 +460,11 @@
             <button class="btn green" id="save-settings-btn">Save</button>
           </div>
           <div class="card">
+            <h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Notifications</h3>
+            <p id="notification-status">Notifications are off.</p>
+            <button class="btn secondary" id="enable-notifications-btn">Enable notifications</button>
+          </div>
+          <div class="card">
             <h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Export data (CSV)</h3>
             <div style="display:flex;flex-wrap:wrap;gap:8px;">
               <button class="btn secondary small" id="export-workouts">Workouts</button>
@@ -1437,6 +1442,30 @@
   }
   init();
 })();
+
+  // ---------- PWA notifications ----------
+  async function setupNexaNotifications(){
+    const status=document.getElementById('notification-status');
+    if(!('serviceWorker' in navigator) || !('Notification' in window)){
+      if(status) status.textContent='Notifications are not supported in this browser.';
+      return;
+    }
+    try{
+      const reg=await navigator.serviceWorker.register('./service-worker.js');
+      const refresh=()=>{ if(status) status.textContent = Notification.permission==='granted' ? 'Notifications are enabled.' : (Notification.permission==='denied' ? 'Notifications are blocked in iPhone settings.' : 'Notifications are off.'); };
+      refresh();
+      const btn=document.getElementById('enable-notifications-btn');
+      if(btn) btn.onclick=async()=>{
+        const permission=await Notification.requestPermission(); refresh();
+        if(permission==='granted'){
+          await reg.showNotification('Nexa notifications are on',{body:'You can now receive Nexa reminders.',icon:'./logo.png',badge:'./logo.png',tag:'nexa-enabled'});
+          showToast('Notifications enabled');
+        }
+      };
+    }catch(e){ if(status) status.textContent='Could not enable notifications.'; console.error(e); }
+  }
+
+  window.addEventListener('load', setupNexaNotifications);
 </script>
 </body>
 </html>
