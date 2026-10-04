@@ -105,6 +105,11 @@
     .widget{padding:15px}
     .class-row{padding:13px}
   }
+  /* Nexa concept dashboard */
+  .widget-head{gap:8px}.widget-head h3{flex:1}.widget-open{border:0;background:transparent;color:var(--coral);font:700 12px inherit;padding:8px 3px;cursor:pointer}.widget-open:active{opacity:.6}
+  .dash-task{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.09)}.dash-task:last-child{border-bottom:0}.dash-task-main{flex:1;min-width:0}.dash-task-title{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dash-task-date{font-size:11px;color:var(--muted);margin-top:3px}
+  .dash-event{display:flex;align-items:center;gap:13px;padding:12px;background:rgba(255,255,255,.055);border:1px solid var(--border);border-radius:15px;margin-bottom:8px}.dash-datebox{width:44px;text-align:center;flex-shrink:0}.dash-datebox strong{display:block;font-size:20px;line-height:1}.dash-datebox span{display:block;font-size:10px;color:var(--coral);font-weight:800;margin-top:4px}.dash-event-main{flex:1;min-width:0}.dash-event-title{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dash-event-meta{font-size:11px;color:var(--muted);margin-top:3px}
+  .train-hero{display:flex;align-items:center;justify-content:space-between;gap:12px}.train-name{font-size:21px;font-weight:800;text-transform:capitalize}.train-meta{font-size:12px;color:var(--muted);margin-top:3px}
   .page{display:none;}
   .page.active{display:block;animation:fadein .18s ease;}
   @keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
@@ -819,7 +824,8 @@
   }
   function renderWidgetTasks(el){
     const upcoming = state.tasks.filter(t=>!t.done).sort((a,b)=>(a.dueDate||'9999').localeCompare(b.dueDate||'9999')).slice(0,5);
-    el.innerHTML = upcoming.length ? upcoming.map(t=>'<div class="row" style="padding:5px 0;"><span style="font-size:13px;">'+escapeHTML(t.title)+'</span><span class="badge '+t.priority+'">'+t.priority+'</span></div>').join('') : '<p>Nothing due. Nice.</p>';
+    el.innerHTML = upcoming.length ? upcoming.map(t=>'<div class="dash-task"><button class="checkbtn" data-task-done="'+t.id+'"></button><div class="dash-task-main"><div class="dash-task-title">'+escapeHTML(t.title)+'</div><div class="dash-task-date">'+(t.dueDate?(t.dueDate===todayKey()?'Due today':'Due '+t.dueDate):'No due date')+'</div></div><span class="badge '+t.priority+'">'+t.priority+'</span></div>').join('') : '<p>Nothing due. Nice.</p>';
+    el.querySelectorAll('[data-task-done]').forEach(btn=>btn.addEventListener('click',async()=>{const t=state.tasks.find(x=>x.id===btn.dataset.taskDone);if(!t)return;t.done=true;await save('tasks',state.tasks);renderDashboard();}));
   }
   function renderWidgetCalendar(el){
     const upcoming = state.events.filter(e=>e.date && e.date>=todayKey()).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,5);
@@ -828,7 +834,7 @@
       const day=d.toLocaleDateString('en-US',{day:'numeric'});
       const mon=d.toLocaleDateString('en-US',{month:'short'}).toUpperCase();
       const when=e.date===todayKey()?'TODAY':d.toLocaleDateString('en-US',{weekday:'short'}).toUpperCase();
-      return '<div class="class-row" style="margin-bottom:8px;"><div style="width:48px;text-align:center;flex-shrink:0;"><div style="font-size:18px;font-weight:800;color:var(--ink);line-height:1;">'+day+'</div><div style="font-size:10px;font-weight:700;color:var(--coral);margin-top:4px;">'+mon+'</div></div><div style="flex:1;min-width:0;"><div class="csubject">'+escapeHTML(e.title)+'</div><div class="croom">'+when+(e.type?' · '+escapeHTML(e.type).toUpperCase():'')+'</div></div></div>';
+      return '<div class="dash-event"><div class="dash-datebox"><strong>'+day+'</strong><span>'+mon+'</span></div><div class="dash-event-main"><div class="dash-event-title">'+escapeHTML(e.title)+'</div><div class="dash-event-meta">'+when+(e.type?' · '+escapeHTML(e.type).toUpperCase():'')+'</div></div><span style="color:var(--muted);font-size:18px;">›</span></div>';
     }).join('') : '<p>Nothing scheduled.</p>';
   }
   function renderWidgetPrayer(el){
@@ -858,7 +864,9 @@
       const def = WIDGET_DEFS[id]; if(!def) return;
       const w = document.createElement('div');
       w.className = 'widget'; w.draggable = true; w.dataset.id = id;
-      w.innerHTML = '<div class="widget-head"><h3>'+def.title+'</h3><button class="widget-hide" data-hide="'+id+'">\u2715</button></div><div class="widget-body"></div>';
+      const links={classes:['View All','settings','classes'],train:['Open','health','training'],nutrition:['Open','health','nutrition'],habits:['View All','health','habits'],tasks:['View All','tasks',''],calendar:['View All','calendar','']}; const link=links[id];
+      w.innerHTML = '<div class="widget-head"><h3>'+def.title+'</h3>'+(link?'<button class="widget-open" data-open-page="'+link[1]+'" data-open-sub="'+link[2]+'">'+link[0]+'</button>':'')+'<button class="widget-hide" data-hide="'+id+'">\u2715</button></div><div class="widget-body"></div>';
+      const ob=w.querySelector('[data-open-page]'); if(ob) ob.addEventListener('click',()=>{navigate(ob.dataset.openPage);if(ob.dataset.openSub)setTimeout(()=>{const b=document.querySelector('#'+ob.dataset.openPage+'-subtabs [data-sub="'+ob.dataset.openSub+'"]');if(b)b.click();},0);});
       w.addEventListener('dragstart', ()=>{ dragId=id; w.classList.add('dragging'); });
       w.addEventListener('dragend', ()=>{ w.classList.remove('dragging'); });
       w.addEventListener('dragover', e=>e.preventDefault());
