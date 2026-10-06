@@ -13,7 +13,7 @@
 <link rel="icon" type="image/png" href="./icon-192.png?v=3">
 <link rel="manifest" href="manifest.webmanifest">
 <script src="./push-config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="window.NEXA_SUPABASE_LOAD_FAILED=true"></script>
 <title>Nexa</title>
 <style>
   :root{
@@ -626,7 +626,7 @@
   let calYear, calMonth, calSelectedDate=null;
   let cloudUser=null, cloudSyncTimer=null, cloudHydrating=false;
   const CLOUD_KEYS=['exercises','logs','events','nutrition','tasks','habits','habitLogs','classSchedule','subjects','subjectItems','health','config'];
-  const sb=window.supabase?.createClient('https://kpsnghviozowwjpqqity.supabase.co','sb_publishable_AoOlOroOz8Tw_buvKn-tBw_5FbZQOZD');
+  const sb=(window.supabase&&window.supabase.createClient)?window.supabase.createClient('https://kpsnghviozowwjpqqity.supabase.co','sb_publishable_AoOlOroOz8Tw_buvKn-tBw_5FbZQOZD'):null;
   function cloudPayload(){const out={};CLOUD_KEYS.forEach(k=>out[k]=state[k]);return out;}
   function setCloudUI(msg){
     const status=document.getElementById('cloud-status'), user=document.getElementById('cloud-user'), dot=document.getElementById('cloud-dot');
@@ -1502,7 +1502,7 @@
   };
   document.getElementById('cloud-sync-btn').onclick=()=>pushCloud();
   document.getElementById('cloud-signout-btn').onclick=async()=>{if(!sb)return;await pushCloud();await sb.auth.signOut();cloudUser=null;setCloudUI();document.getElementById('auth-modal').classList.add('show');};
-  sb?.auth.onAuthStateChange((_event,session)=>{cloudUser=session?.user||null;setCloudUI();});
+  if(sb) sb.auth.onAuthStateChange((_event,session)=>{cloudUser=session?.user||null;setCloudUI();});
 
   init().catch(e=>{console.error('Nexa init failed',e);document.getElementById('loading').style.display='none';document.getElementById('shell').style.display='flex';document.getElementById('auth-modal')?.classList.add('show');});
 })();
