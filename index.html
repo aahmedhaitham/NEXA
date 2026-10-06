@@ -486,6 +486,11 @@
             <button class="btn secondary" id="enable-notifications-btn">Enable notifications</button>
           </div>
           <div class="card">
+            <h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">App update</h3>
+            <p>Force Nexa to fetch the newest deployed version.</p>
+            <button class="btn secondary full" id="refresh-app-btn">Refresh Nexa</button>
+          </div>
+          <div class="card">
             <h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Danger zone</h3>
             <p>Wipes every exercise, log, event, task, and habit.</p>
             <button class="btn" style="background:#c0392b;" id="reset-btn">Reset all data</button>
@@ -1301,6 +1306,19 @@
     document.getElementById('task-form').style.display='none';
     renderTaskList(); renderStatbar(); showToast('Task added.');
   });
+  document.getElementById('refresh-app-btn').addEventListener('click', async ()=>{
+    const btn=document.getElementById('refresh-app-btn'); btn.disabled=true; btn.textContent='Refreshing…';
+    try{
+      if('serviceWorker' in navigator){
+        const regs=await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(reg=>reg.update().catch(()=>{})));
+        const keys=await caches.keys();
+        await Promise.all(keys.filter(k=>k.startsWith('nexa-')).map(k=>caches.delete(k)));
+      }
+    }catch(e){ console.warn('Refresh failed',e); }
+    location.reload();
+  });
+
   document.getElementById('habit-new-btn').addEventListener('click', ()=>{ document.getElementById('habit-form').style.display='block'; });
   document.getElementById('habit-cancel-btn').addEventListener('click', ()=>{ document.getElementById('habit-form').style.display='none'; });
   document.getElementById('habit-save-btn').addEventListener('click', async ()=>{
