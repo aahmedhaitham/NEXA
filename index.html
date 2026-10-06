@@ -304,6 +304,10 @@
   .tabbar{position:relative!important;flex:0 0 auto!important;overflow:hidden!important;overscroll-behavior:none;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
   .tabbar,.tabbar *{-webkit-user-drag:none;}
   .main{overscroll-behavior-y:contain;}
+  /* Stop iOS rubber-band/page pulling; only the main content area scrolls. */
+  html,body,.app-shell{overscroll-behavior:none!important;}
+  body{position:fixed;inset:0;}
+  .main{overscroll-behavior-y:none!important;}
 </style>
   <!-- deploy-refresh-20261004 -->
 </head>
@@ -742,6 +746,9 @@
       });
     });
   }
+  // Prevent the outer PWA shell from rubber-banding when a swipe starts outside scrollable content.
+  document.addEventListener('touchmove',e=>{if(!e.target.closest('#main-scroll')&&!e.target.closest('input,textarea,select'))e.preventDefault();},{passive:false});
+
   const tabbarLock=document.getElementById('tabbar');
   tabbarLock.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
   tabbarLock.addEventListener('dragstart',e=>e.preventDefault());
