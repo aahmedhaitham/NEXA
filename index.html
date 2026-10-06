@@ -335,12 +335,6 @@
           <div>
             <div class="card" id="task-form" style="display:none;"><input type="hidden" id="task-edit-id">
               <div class="field"><label>Title</label><input type="text" id="task-in-title" placeholder="Task title"></div>
-              <div class="grid2">
-                <div class="field"><label>Due date</label><input type="date" id="task-in-due"></div>
-                <div class="field"><label>Priority</label>
-                  <select id="task-in-priority"><option value="low">Low</option><option value="med" selected>Medium</option><option value="high">High</option></select>
-                </div>
-              </div>
               <div class="field"><label>Notes</label><textarea id="task-in-notes" rows="2"></textarea></div>
               <div class="grid2"><button class="btn gray" id="task-cancel-btn">Cancel</button><button class="btn" id="task-save-btn">Save task</button></div>
             </div>
@@ -473,10 +467,6 @@
             <h3 id="cal-day-title" style="font-size:13px;margin-bottom:8px;"></h3>
             <div id="cal-day-events"></div>
           </div>
-          <div class="card">
-            <h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Someday list</h3>
-            <div id="backlog-list"></div>
-          </div>
         </div>
       </div>
     </section>
@@ -496,7 +486,6 @@
             <p id="notification-status">Notifications are off.</p>
             <div class="notify-list">
               <div class="notify-row"><label class="notify-toggle">Classes <input type="checkbox" id="notify-classes"></label><select id="notify-classes-lead"><option value="0">At time</option><option value="5">5 min before</option><option value="10">10 min before</option><option value="15">15 min before</option><option value="30">30 min before</option></select></div>
-              <div class="notify-row"><label class="notify-toggle">Tasks <input type="checkbox" id="notify-tasks"></label><select id="notify-tasks-lead"><option value="0">At 9:00 AM</option><option value="30">8:30 AM</option><option value="60">8:00 AM</option></select></div>
               <div class="notify-row"><label class="notify-toggle">Habits <input type="checkbox" id="notify-habits"></label><select id="notify-habits-lead"><option value="0">At habit time</option><option value="5">5 min before</option><option value="10">10 min before</option><option value="15">15 min before</option></select></div>
               <div class="notify-row"><label class="notify-toggle">Prayer <input type="checkbox" id="notify-prayer"></label><select id="notify-prayer-lead"><option value="0">At prayer time</option><option value="5">5 min before</option><option value="10">10 min before</option><option value="15">15 min before</option></select></div>
               <div class="notify-row"><label class="notify-toggle">Events <input type="checkbox" id="notify-events"></label><select id="notify-events-lead"><option value="0">At 9:00 AM</option><option value="30">8:30 AM</option><option value="60">8:00 AM</option></select></div>
@@ -626,7 +615,7 @@
     state.exercises = await safeGet('exercises', DEFAULT_EXERCISES);
     state.logs = await safeGet('logs', []);
     state.events = await safeGet('events', []);
-    state.config = await safeGet('config', {plan:DEFAULT_PLAN, settings:{notifications:{classes:true,tasks:true,habits:true,prayer:true,events:true},notificationLead:{classes:15,tasks:0,habits:0,prayer:0,events:0}}, dashboardOrder:['classes','train','nutrition','habits','tasks','calendar','prayer']});
+    state.config = await safeGet('config', {plan:DEFAULT_PLAN, settings:{notifications:{classes:true,habits:true,prayer:true,events:true},notificationLead:{classes:15,habits:0,prayer:0,events:0}}, dashboardOrder:['classes','train','nutrition','habits','tasks','calendar','prayer']});
     if(!state.config.plan) state.config.plan = DEFAULT_PLAN;
     if(!state.config.settings) state.config.settings = {};
     if(!state.config.settings.notifications) state.config.settings.notifications = {classes:true,tasks:true,habits:true,prayer:true,events:true};
@@ -636,6 +625,9 @@
     state.config.dashboardOrder=state.config.dashboardOrder.filter(id=>id!=='creatine');
     state.nutrition = await safeGet('nutrition', {});
     state.tasks = await safeGet('tasks', []);
+    const somedayEvents=state.events.filter(e=>!e.date);
+    if(somedayEvents.length){somedayEvents.forEach(e=>{if(!state.tasks.some(t=>t.id==='from-'+e.id))state.tasks.push({id:'from-'+e.id,title:e.title,notes:e.notes||'',done:!!e.done,subtasks:[],dueDate:null,priority:null});});state.events=state.events.filter(e=>!!e.date);localStorage.setItem('cb_tasks',JSON.stringify(state.tasks));localStorage.setItem('cb_events',JSON.stringify(state.events));}
+    state.tasks.forEach(t=>{t.dueDate=null;t.priority=null;});
     state.habits = await safeGet('habits', DEFAULT_HABITS);
     state.habitLogs = await safeGet('habitLogs', {});
     state.health = await safeGet('health', {steps:{}, sleep:{}, weight:[]});
@@ -814,16 +806,8 @@
     }));
   }
   function renderWidgetTasks(el){
-    const today=todayKey();
-    const upcoming=state.tasks.filter(t=>!t.done).sort((a,b)=>{
-      const ao=!!a.dueDate&&a.dueDate<today, bo=!!b.dueDate&&b.dueDate<today;
-      return (bo-ao)||(a.dueDate||'9999').localeCompare(b.dueDate||'9999');
-    }).slice(0,5);
-    el.innerHTML=upcoming.length?upcoming.map(t=>{
-      const overdue=!!t.dueDate&&t.dueDate<today;
-      const dateText=overdue?'OVERDUE · '+t.dueDate:(t.dueDate===today?'DUE TODAY':t.dueDate?'Due '+t.dueDate:'NO DUE DATE');
-      return '<div class="dash-task'+(overdue?' overdue':'')+'"><div class="dash-task-main"><div class="dash-task-title">'+escapeHTML(t.title)+'</div><div class="dash-task-date'+(overdue?' overdue-text':'')+'">'+dateText+'</div></div><span class="badge '+t.priority+'">'+t.priority+'</span><button class="btn green quick-done" data-done-task="'+t.id+'">Done</button></div>';
-    }).join(''):'<div class="empty-state">All clear — nothing due soon.</div>';
+    const upcoming=state.tasks.filter(t=>!t.done).slice(0,5);
+    el.innerHTML=upcoming.length?upcoming.map(t=>'<div class="dash-task"><div class="dash-task-main"><div class="dash-task-title">'+escapeHTML(t.title)+'</div>'+(t.notes?'<div class="dash-task-date">'+escapeHTML(t.notes)+'</div>':'')+'</div><button class="btn green quick-done" data-done-task="'+t.id+'">Done</button></div>').join(''):'<div class="empty-state">All clear — no open tasks.</div>';
     el.querySelectorAll('[data-done-task]').forEach(b=>b.onclick=async()=>{const t=state.tasks.find(x=>x.id===b.dataset.doneTask);if(t){await animateOut(b.closest('.dash-task'),'item-complete');t.done=true;haptic();await save('tasks',state.tasks);renderDashboard();}});
   }
   function renderWidgetCalendar(el){
@@ -964,22 +948,19 @@
   }
 
   // ---------- TASKS ----------
-  function openTaskEdit(t){document.getElementById('task-edit-id').value=t.id;document.getElementById('task-in-title').value=t.title;document.getElementById('task-in-due').value=t.dueDate||'';document.getElementById('task-in-priority').value=t.priority||'med';document.getElementById('task-in-notes').value=t.notes||'';document.getElementById('task-form').style.display='block';document.getElementById('task-in-title').focus();}
+  function openTaskEdit(t){document.getElementById('task-edit-id').value=t.id;document.getElementById('task-in-title').value=t.title;document.getElementById('task-in-notes').value=t.notes||'';document.getElementById('task-form').style.display='block';document.getElementById('task-in-title').focus();}
   function renderTaskList(){
     const wrap = document.getElementById('task-list');
     wrap.innerHTML = '';
-    const today=todayKey();
-    const list = state.tasks.slice().sort((a,b)=>(a.done-b.done)||((!!b.dueDate&&b.dueDate<today)-(!!a.dueDate&&a.dueDate<today))||(a.dueDate||'9999').localeCompare(b.dueDate||'9999'));
+    const list = state.tasks.slice().sort((a,b)=>(a.done-b.done));
     if(!list.length){ wrap.innerHTML = '<div class="empty-state">No tasks yet — enjoy the clear list.</div>'; return; }
     list.forEach(t=>{
-      const row = document.createElement('div'); const overdue=!t.done&&!!t.dueDate&&t.dueDate<today; row.className='task-row'+(overdue?' overdue':'');
+      const row = document.createElement('div'); row.className='task-row';
       const check = document.createElement('button'); check.className='checkbtn'+(t.done?' checked':''); check.textContent=t.done?'\u2713':'';
       check.onclick = async ()=>{ t.done=!t.done; haptic(); await save('tasks', state.tasks); renderTaskList(); renderStatbar(); };
       const body = document.createElement('div'); body.style.flex='1';
       const subDone = (t.subtasks||[]).filter(s=>s.done).length;
-      body.innerHTML = '<div class="ttitle'+(t.done?' done':'')+'">'+escapeHTML(t.title)+'</div><div class="task-meta">'+
-        '<span class="badge '+t.priority+'">'+t.priority+'</span>' + (t.dueDate?'<span class="'+(overdue?'overdue-text':'')+'">'+(overdue?'OVERDUE · ':'')+t.dueDate+'</span>':'') +
-        ((t.subtasks&&t.subtasks.length)?'<span>'+subDone+'/'+t.subtasks.length+' subtasks</span>':'') + '</div>';
+      body.innerHTML = '<div class="ttitle'+(t.done?' done':'')+'">'+escapeHTML(t.title)+'</div>'+((t.subtasks&&t.subtasks.length)?'<div class="task-meta"><span>'+subDone+'/'+t.subtasks.length+' subtasks</span></div>':'');
       row.appendChild(check); row.appendChild(body);
       const edit = document.createElement('button'); edit.className='btn gray small'; edit.textContent='Edit';
       edit.onclick=e=>{e.stopPropagation();openTaskEdit(t);};
@@ -1115,13 +1096,7 @@
     list.innerHTML = items.length ? '' : '<p>Nothing here yet.</p>';
     items.forEach(ev=>list.appendChild(eventRow(ev)));
   }
-  function renderBacklog(){
-    const wrap = document.getElementById('backlog-list');
-    const items = state.events.filter(e=>!e.date);
-    wrap.innerHTML = items.length ? '' : '<p>Nothing on your someday list.</p>';
-    items.forEach(ev=>wrap.appendChild(eventRow(ev)));
-  }
-  function renderAllCalendarBits(){ renderCalendar(); renderCalDayDetail(); renderBacklog(); }
+  function renderAllCalendarBits(){ renderCalendar(); renderCalDayDetail(); }
 
   // ---------- settings / plan ----------
   function renderPlanEditor(){
@@ -1334,10 +1309,10 @@
     const title = document.getElementById('task-in-title').value.trim();
     if(!title){ showToast('Give it a title.'); return; }
     const editId=document.getElementById('task-edit-id').value;
-    const vals={title,dueDate:document.getElementById('task-in-due').value||null,priority:document.getElementById('task-in-priority').value,notes:document.getElementById('task-in-notes').value.trim()};
+    const vals={title,notes:document.getElementById('task-in-notes').value.trim(),dueDate:null,priority:null};
     if(editId){const t=state.tasks.find(x=>x.id===editId);if(t)Object.assign(t,vals);}else state.tasks.push({id:'t-'+Date.now(),...vals,done:false,subtasks:[]});
     await save('tasks', state.tasks);
-    document.getElementById('task-in-title').value=''; document.getElementById('task-in-due').value=''; document.getElementById('task-in-notes').value=''; document.getElementById('task-edit-id').value='';
+    document.getElementById('task-in-title').value=''; document.getElementById('task-in-notes').value=''; document.getElementById('task-edit-id').value='';
     document.getElementById('task-form').style.display='none';
     renderTaskList(); renderStatbar(); showToast('Task added.');
   });
@@ -1407,7 +1382,7 @@
   document.getElementById('save-settings-btn').addEventListener('click', async ()=>{
     state.config.settings.notifications={};
     state.config.settings.notificationLead={};
-    ['classes','tasks','habits','prayer','events'].forEach(k=>{state.config.settings.notifications[k]=document.getElementById('notify-'+k).checked;state.config.settings.notificationLead[k]=parseInt(document.getElementById('notify-'+k+'-lead').value,10)||0;});
+    ['classes','habits','prayer','events'].forEach(k=>{state.config.settings.notifications[k]=document.getElementById('notify-'+k).checked;state.config.settings.notificationLead[k]=parseInt(document.getElementById('notify-'+k+'-lead').value,10)||0;});
     await save('config', state.config);
     try{
       if(Notification.permission==='granted'){
