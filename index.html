@@ -177,6 +177,13 @@
   .class-row.tutorial{border-left-color:var(--blue)!important;}
   .class-row.passed{opacity:.62;}
   .class-passed{font-size:10px;font-weight:800;letter-spacing:.04em;color:var(--muted);border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:4px 7px;margin-left:7px;white-space:nowrap;}
+  .dash-habits{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+  .dash-habit{min-height:58px;border:1px solid var(--hairline);border-radius:14px;background:var(--surface2);color:var(--ink);padding:10px 12px;font:inherit;font-size:13px;font-weight:700;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .dash-habit.done{border-color:rgba(51,214,122,.45);background:rgba(51,214,122,.10);}
+  .dash-habit-mark{width:22px;height:22px;border-radius:7px;border:1px solid rgba(255,255,255,.18);display:grid;place-items:center;flex-shrink:0;color:var(--green);}
+  .dash-task{display:flex;align-items:center;gap:11px;padding:11px 12px;margin-bottom:8px;background:var(--surface2);border:1px solid var(--hairline);border-radius:14px;}
+  .dash-task:last-child{margin-bottom:0}.dash-task-main{flex:1;min-width:0}.dash-task-title{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dash-task-date{font-size:10.5px;color:var(--muted);margin-top:3px;}
+
   .class-row .ctime{font-size:12.5px;font-weight:700;color:var(--muted);width:110px;flex-shrink:0;}
   .class-row .csubject{flex:1;font-weight:700;font-size:14px;}
   .class-row .croom{font-size:11.5px;color:var(--muted);}
@@ -768,7 +775,8 @@
       const goal = g[k==='calories'?'calGoal':k+'Goal']||0;
       const pct = goal>0 ? Math.min(100,(nut[k]/goal)*100) : (nut[k]>0?15:0);
       const label = k[0].toUpperCase()+k.slice(1);
-      return '<div class="nutri-row"><div class="nutri-label"><span>'+label+'</span><span class="val">'+Math.round(nut[k])+(goal>0?' / '+Math.round(goal):'')+'</span></div><div class="nutri-bar"><div class="nutri-fill" style="width:'+pct+'%;background:var(--coral);"></div></div></div>';
+      const color = k==='calories'?'var(--coral)':k==='protein'?'var(--blue)':k==='carbs'?'var(--gold)':'var(--purple)';
+      return '<div class="nutri-row"><div class="nutri-label"><span>'+label+'</span><span class="val">'+Math.round(nut[k])+(goal>0?' / '+Math.round(goal):'')+'</span></div><div class="nutri-bar"><div class="nutri-fill" style="width:'+pct+'%;background:'+color+';"></div></div></div>';
     }).join('');
   }
   function renderWidgetHabits(el){
@@ -785,7 +793,7 @@
   }
   function renderWidgetTasks(el){
     const upcoming = state.tasks.filter(t=>!t.done).sort((a,b)=>(a.dueDate||'9999').localeCompare(b.dueDate||'9999')).slice(0,5);
-    el.innerHTML = upcoming.length ? upcoming.map(t=>'<div class="row" style="padding:5px 0;"><span style="font-size:13px;">'+escapeHTML(t.title)+'</span><span class="badge '+t.priority+'">'+t.priority+'</span></div>').join('') : '<p>Nothing due. Nice.</p>';
+    el.innerHTML = upcoming.length ? upcoming.map(t=>'<div class="dash-task"><div class="dash-task-main"><div class="dash-task-title">'+escapeHTML(t.title)+'</div><div class="dash-task-date">'+(t.dueDate?(t.dueDate===todayKey()?'DUE TODAY':'Due '+t.dueDate):'NO DUE DATE')+'</div></div><span class="badge '+t.priority+'">'+t.priority+'</span></div>').join('') : '<p>Nothing due. Nice.</p>';
   }
   function renderWidgetCalendar(el){
     const upcoming = state.events.filter(e=>e.date && e.date>=todayKey()).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,5);
