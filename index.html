@@ -79,8 +79,8 @@
   /* Keep class cards dark */
   .class-row{background:#1d2026!important;border-color:rgba(255,255,255,.11)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;}
   .page{display:none;}
-  .page.active{display:block;animation:fadein .18s ease;}
-  @keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+  .page.active{display:block;}
+  /* Instant page switching prevents the brief dark flash between tabs on iOS. */
   .page-head{margin-bottom:18px;}
   .page-head h1{font-size:30px;font-weight:800;letter-spacing:-0.03em;}
   .page-head p{margin-top:4px;font-size:13.5px;}
