@@ -652,8 +652,11 @@
     cloudHydrating=false;return true;
   }
   async function setupCloudAuth(){
-    if(!sb)return;
-    const {data:{session}}=await sb.auth.getSession(); cloudUser=session?.user||null;
+    if(!sb){ document.getElementById('auth-modal')?.classList.add('show'); setCloudUI('Cloud unavailable'); return; }
+    const {data:{session}}=await Promise.race([
+      sb.auth.getSession(),
+      new Promise(resolve=>setTimeout(()=>resolve({data:{session:null}}),2500))
+    ]); cloudUser=session?.user||null;
     const modal=document.getElementById('auth-modal');
     if(!cloudUser){modal.classList.add('show');setCloudUI();return;}
     modal.classList.remove('show');setCloudUI('Cloud connected');
@@ -1472,8 +1475,13 @@
 
   // ---------- init ----------
   async function init(){
-    await loadAll();
-    await setupCloudAuth();
+    try{
+      await loadAll();
+      await setupCloudAuth();
+    }catch(e){
+      console.error('Nexa startup recovery',e);
+      document.getElementById('auth-modal')?.classList.add('show');
+    }
     const now = new Date(); calYear=now.getFullYear(); calMonth=now.getMonth();
     const ns=state.config.settings.notifications;
     ['classes','tasks','habits','prayer','events'].forEach(k=>{const el=document.getElementById('notify-'+k);if(el)el.checked=ns[k]!==false;const lead=document.getElementById('notify-'+k+'-lead');if(lead)lead.value=String((state.config.settings.notificationLead||{})[k]||0);});
@@ -1501,7 +1509,7 @@
   document.getElementById('cloud-signout-btn').onclick=async()=>{if(!sb)return;await pushCloud();await sb.auth.signOut();cloudUser=null;setCloudUI();document.getElementById('auth-modal').classList.add('show');};
   sb?.auth.onAuthStateChange((_event,session)=>{cloudUser=session?.user||null;setCloudUI();});
 
-  init();
+  init().catch(e=>{console.error('Nexa init failed',e);document.getElementById('loading').style.display='none';document.getElementById('shell').style.display='flex';document.getElementById('auth-modal')?.classList.add('show');});
 })();
 
   // ---------- PWA notifications ----------
