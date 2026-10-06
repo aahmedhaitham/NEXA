@@ -187,7 +187,6 @@
   .dash-task.overdue,.task-row.overdue{border-color:rgba(255,90,43,.45);background:rgba(255,90,43,.07)} .overdue-text{color:var(--coral)!important;font-weight:800}
   .class-live{color:var(--green);border-color:rgba(51,214,122,.35);background:rgba(51,214,122,.08)} .class-soon{color:var(--gold);border-color:rgba(255,194,75,.35);background:rgba(255,194,75,.08)}
   .empty-state{text-align:center;padding:18px 10px;border:1px dashed rgba(255,255,255,.13);border-radius:14px;color:var(--muted);font-size:12.5px;background:rgba(255,255,255,.025)}
-  .progress-cell{display:flex;align-items:center;gap:10px}.progress-ring{--p:0;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--green) calc(var(--p)*1%),rgba(255,255,255,.08) 0);position:relative;flex-shrink:0}.progress-ring:after{content:'';position:absolute;inset:5px;border-radius:50%;background:var(--surface)}.progress-ring span{position:relative;z-index:1;font-size:10px;font-weight:800}
   .notify-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.notify-toggle{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface2);border:1px solid var(--hairline);border-radius:12px;padding:10px 11px;font-size:12px;font-weight:700}.notify-toggle input{accent-color:var(--coral);width:18px;height:18px}
   .task-row{transition:transform .16s ease,opacity .16s ease}.task-row.swiping{transition:none}
 
@@ -749,20 +748,16 @@
 
   // ---------- DASHBOARD ----------
   function renderStatbar(){
-    const log = state.habitLogs[todayKey()]||{};
-    const doneHabits = state.habits.filter(h=>!!log[h.id]).length;
-    const dueTasks = state.tasks.filter(t=>!t.done && (!t.dueDate || t.dueDate<=todayKey()));
-    const doneDue = state.tasks.filter(t=>t.done && t.dueDate===todayKey()).length;
-    const total = state.habits.length + dueTasks.length + doneDue;
-    const done = doneHabits + doneDue;
-    const pct = total ? Math.round(done/total*100) : 100;
+    const doneToday = Object.values((state.habitLogs[todayKey()]||{})).filter(Boolean).length;
     const tasksOpen = state.tasks.filter(t=>!t.done).length;
-    const wrap = document.getElementById('statbar'); wrap.innerHTML='';
-    [['Open tasks',tasksOpen],['Habits today',doneHabits+'/'+state.habits.length]].forEach(([lbl,num])=>{
-      const cell=document.createElement('div'); cell.className='statcell'; cell.innerHTML='<div class="num">'+num+'</div><div class="lbl">'+lbl+'</div>'; wrap.appendChild(cell);
-    });
-    const pc=document.createElement('div'); pc.className='statcell progress-cell'; pc.style.gridColumn='1 / -1';
-    pc.innerHTML='<div class="progress-ring" style="--p:'+pct+'"><span>'+pct+'%</span></div><div><div style="font-weight:800;font-size:15px;">Today progress</div><div class="lbl">'+done+' of '+total+' complete</div></div>'; wrap.appendChild(pc);
+    const wrap = document.getElementById('statbar');
+    wrap.innerHTML = '';
+    [['Open tasks',tasksOpen],['Habits today',doneToday+'/'+state.habits.length]]
+      .forEach(([lbl,num])=>{
+        const cell=document.createElement('div'); cell.className='statcell';
+        cell.innerHTML='<div class="num">'+num+'</div><div class="lbl">'+lbl+'</div>';
+        wrap.appendChild(cell);
+      });
   }
   const WIDGET_DEFS = {
     classes:{title:'Today\u2019s Classes', render:renderWidgetClasses},
