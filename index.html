@@ -190,7 +190,8 @@
   .class-row{flex-wrap:wrap}.class-row .item-actions{margin-left:auto}.class-row .badge{flex-shrink:0}
   html,body,.app-shell,.main,.page,.card,.widget{max-width:100%}.main,.page{min-width:0}
   @media(max-width:520px){.notify-row{grid-template-columns:1fr 145px}.class-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px 10px}.class-row .ctime{width:auto}.class-row .item-actions{grid-column:1/-1;width:100%;display:grid;grid-template-columns:1fr 1fr}.class-row .item-actions .btn{width:100%;margin:0!important}.heat-row{grid-template-columns:minmax(0,1fr) auto}.heat-row .item-actions{grid-column:1/-1;grid-row:3;width:100%;display:grid;grid-template-columns:1fr 1fr}.heat-row .item-actions .btn{width:100%;margin:0!important}}.notify-toggle{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface2);border:1px solid var(--hairline);border-radius:12px;padding:10px 11px;font-size:12px;font-weight:700}.notify-toggle input{accent-color:var(--coral);width:18px;height:18px}
-  .task-row{transition:transform .16s ease,opacity .16s ease}.task-row.swiping{transition:none}
+  .task-row{transition:transform .22s ease,opacity .22s ease,background .22s ease}.class-row,.dash-task,.dash-event,.dash-habit{transition:transform .22s ease,opacity .22s ease,background .22s ease}.item-complete{transform:scale(.985);opacity:.35}.item-remove{transform:translateX(-18px);opacity:0}
+  .undo-toast{position:fixed;left:50%;bottom:calc(82px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9999;background:#252830;border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:14px;box-shadow:0 12px 30px rgba(0,0,0,.35);font-size:13px;white-space:nowrap}.undo-toast button{border:0;background:none;color:var(--coral);font:inherit;font-weight:800;padding:5px}.task-row.swiping{transition:none}
 
   .class-row .ctime{font-size:12.5px;font-weight:700;color:var(--muted);width:110px;flex-shrink:0;}
   .class-row .csubject{flex:1;font-weight:700;font-size:14px;}
@@ -635,6 +636,9 @@
 
   function escapeHTML(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
   function showToast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),3000); }
+  let undoTimer=null,undoEl=null;
+  function offerUndo(label,fn){if(undoEl)undoEl.remove();if(undoTimer)clearTimeout(undoTimer);undoEl=document.createElement('div');undoEl.className='undo-toast';undoEl.innerHTML='<span>'+escapeHTML(label)+'</span><button type="button">UNDO</button>';document.body.appendChild(undoEl);undoEl.querySelector('button').onclick=async()=>{clearTimeout(undoTimer);undoEl.remove();undoEl=null;await fn();};undoTimer=setTimeout(()=>{if(undoEl)undoEl.remove();undoEl=null;},5000);}
+  function animateOut(el,cls='item-remove'){return new Promise(resolve=>{el.classList.add(cls);setTimeout(resolve,180);});}
   function haptic(ms=12){ try{ if(navigator.vibrate) navigator.vibrate(ms); }catch(_){} }
 
   // ---------- prayer times ----------
@@ -795,7 +799,7 @@
     }).join('')+'</div>' : '<div class="empty-state">No habits yet — add one in Health → Habits.</div>';
     el.querySelectorAll('[data-habit]').forEach(btn=>btn.addEventListener('click', async ()=>{
       const key=todayKey(); if(!state.habitLogs[key]) state.habitLogs[key]={};
-      state.habitLogs[key][btn.dataset.habit] = !state.habitLogs[key][btn.dataset.habit]; haptic();
+      btn.classList.add('item-complete');await new Promise(r=>setTimeout(r,140));state.habitLogs[key][btn.dataset.habit] = !state.habitLogs[key][btn.dataset.habit]; haptic();
       await save('habitLogs', state.habitLogs); renderDashboard();
     }));
   }
@@ -810,7 +814,7 @@
       const dateText=overdue?'OVERDUE · '+t.dueDate:(t.dueDate===today?'DUE TODAY':t.dueDate?'Due '+t.dueDate:'NO DUE DATE');
       return '<div class="dash-task'+(overdue?' overdue':'')+'"><div class="dash-task-main"><div class="dash-task-title">'+escapeHTML(t.title)+'</div><div class="dash-task-date'+(overdue?' overdue-text':'')+'">'+dateText+'</div></div><span class="badge '+t.priority+'">'+t.priority+'</span><button class="btn green quick-done" data-done-task="'+t.id+'">Done</button></div>';
     }).join(''):'<div class="empty-state">All clear — nothing due soon.</div>';
-    el.querySelectorAll('[data-done-task]').forEach(b=>b.onclick=async()=>{const t=state.tasks.find(x=>x.id===b.dataset.doneTask);if(t){t.done=true;haptic();await save('tasks',state.tasks);renderDashboard();}});
+    el.querySelectorAll('[data-done-task]').forEach(b=>b.onclick=async()=>{const t=state.tasks.find(x=>x.id===b.dataset.doneTask);if(t){await animateOut(b.closest('.dash-task'),'item-complete');t.done=true;haptic();await save('tasks',state.tasks);renderDashboard();}});
   }
   function renderWidgetCalendar(el){
     const upcoming = state.events.filter(e=>!e.done && e.date && e.date>=todayKey()).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,5);
@@ -821,7 +825,7 @@
       const when=e.date===todayKey()?'TODAY':d.toLocaleDateString('en-US',{weekday:'short'}).toUpperCase();
       return '<div class="dash-event"><div class="dash-datebox"><strong>'+day+'</strong><span>'+mon+'</span></div><div class="dash-event-main"><div class="dash-event-title">'+escapeHTML(e.title)+'</div><div class="dash-event-meta">'+when+(e.type?' · '+escapeHTML(e.type).toUpperCase():'')+'</div></div><button class="btn green quick-done" data-done-event="'+e.id+'">Done</button></div>';
     }).join('') : '<div class="empty-state">Nothing upcoming — your calendar is clear.</div>';
-    el.querySelectorAll('[data-done-event]').forEach(b=>b.onclick=async()=>{const e=state.events.find(x=>x.id===b.dataset.doneEvent);if(e){e.done=true;haptic();await save('events',state.events);renderDashboard();}});
+    el.querySelectorAll('[data-done-event]').forEach(b=>b.onclick=async()=>{const e=state.events.find(x=>x.id===b.dataset.doneEvent);if(e){await animateOut(b.closest('.dash-event'),'item-complete');e.done=true;haptic();await save('events',state.events);renderDashboard();}});
   }
   function renderWidgetPrayer(el){
     const {times,order,nextKey,nextDiff} = getNextPrayer();
@@ -950,6 +954,7 @@
   }
 
   // ---------- TASKS ----------
+  function openTaskEdit(t){document.getElementById('task-edit-id').value=t.id;document.getElementById('task-in-title').value=t.title;document.getElementById('task-in-due').value=t.dueDate||'';document.getElementById('task-in-priority').value=t.priority||'med';document.getElementById('task-in-notes').value=t.notes||'';document.getElementById('task-form').style.display='block';document.getElementById('task-in-title').focus();}
   function renderTaskList(){
     const wrap = document.getElementById('task-list');
     wrap.innerHTML = '';
@@ -967,11 +972,12 @@
         ((t.subtasks&&t.subtasks.length)?'<span>'+subDone+'/'+t.subtasks.length+' subtasks</span>':'') + '</div>';
       row.appendChild(check); row.appendChild(body);
       const edit = document.createElement('button'); edit.className='btn gray small'; edit.textContent='Edit';
-      edit.onclick=()=>{document.getElementById('task-edit-id').value=t.id;document.getElementById('task-in-title').value=t.title;document.getElementById('task-in-due').value=t.dueDate||'';document.getElementById('task-in-priority').value=t.priority||'med';document.getElementById('task-in-notes').value=t.notes||'';document.getElementById('task-form').style.display='block';};
+      edit.onclick=e=>{e.stopPropagation();openTaskEdit(t);};
       row.appendChild(edit);
       const del = document.createElement('button'); del.className='btn gray small'; del.textContent='Delete';
-      del.onclick = async ()=>{ state.tasks = state.tasks.filter(x=>x.id!==t.id); await save('tasks', state.tasks); renderTaskList(); renderStatbar(); };
+      del.onclick = async e=>{e.stopPropagation();const idx=state.tasks.findIndex(x=>x.id===t.id),copy=JSON.parse(JSON.stringify(t));await animateOut(row);state.tasks.splice(idx,1);await save('tasks',state.tasks);renderTaskList();renderStatbar();offerUndo('Task deleted',async()=>{state.tasks.splice(Math.min(idx,state.tasks.length),0,copy);await save('tasks',state.tasks);renderTaskList();renderStatbar();});};
       row.appendChild(del);
+      body.onclick=()=>openTaskEdit(t);
       let sx=0,dx=0;
       row.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;dx=0;row.classList.add('swiping')},{passive:true});
       row.addEventListener('touchmove',e=>{dx=e.touches[0].clientX-sx;if(Math.abs(dx)>8)row.style.transform='translateX('+Math.max(-90,Math.min(90,dx))+'px)'},{passive:true});
@@ -1013,10 +1019,10 @@
     wrap.querySelectorAll('[data-del-habit]').forEach(btn=>btn.addEventListener('click', async ()=>{
       if(!confirm('Delete this habit? Its history will be removed too.')) return;
       const hid = btn.dataset.delHabit;
-      state.habits = state.habits.filter(h=>h.id!==hid);
-      Object.keys(state.habitLogs).forEach(d=>{ if(state.habitLogs[d][hid]) delete state.habitLogs[d][hid]; });
-      await save('habits', state.habits); await save('habitLogs', state.habitLogs);
-      renderHabitGrid(); renderStatbar();
+      const idx=state.habits.findIndex(h=>h.id===hid),copy=JSON.parse(JSON.stringify(state.habits[idx])),history={};Object.keys(state.habitLogs).forEach(d=>{if(state.habitLogs[d]?.[hid]!==undefined)history[d]=state.habitLogs[d][hid];});
+      state.habits.splice(idx,1);Object.keys(state.habitLogs).forEach(d=>{delete state.habitLogs[d][hid];});
+      await save('habits',state.habits);await save('habitLogs',state.habitLogs);renderHabitGrid();renderStatbar();
+      offerUndo('Habit deleted',async()=>{state.habits.splice(Math.min(idx,state.habits.length),0,copy);Object.entries(history).forEach(([d,v])=>{if(!state.habitLogs[d])state.habitLogs[d]={};state.habitLogs[d][hid]=v;});await save('habits',state.habits);await save('habitLogs',state.habitLogs);renderHabitGrid();renderStatbar();});
     }));
     wrap.querySelectorAll('.heat-cell').forEach(c=>c.addEventListener('click', async ()=>{
       const d=c.dataset.date, hid=c.dataset.habit;
@@ -1076,6 +1082,7 @@
       grid.appendChild(cell);
     }
   }
+  function openEventEdit(ev){document.getElementById('event-edit-id').value=ev.id;document.getElementById('ev-title').value=ev.title;document.getElementById('ev-type').value=ev.type;document.getElementById('ev-date').value=ev.date||'';document.getElementById('ev-notes').value=ev.notes||'';document.getElementById('cal-form').style.display='block';document.getElementById('ev-title').focus();}
   function eventRow(ev){
     const row = document.createElement('div'); row.className='task-row';
     const check = document.createElement('button'); check.className='checkbtn'+(ev.done?' checked':''); check.textContent=ev.done?'\u2713':'';
@@ -1083,8 +1090,8 @@
     row.appendChild(check);
     const body = document.createElement('div'); body.style.flex='1';
     body.innerHTML = '<span class="badge '+ev.type+'">'+ev.type+'</span> <span class="ttitle'+(ev.done?' done':'')+'" style="margin-left:6px;">'+escapeHTML(ev.title)+'</span>';
-    row.appendChild(body);
-    const edit=document.createElement('button');edit.className='btn gray small';edit.textContent='Edit';edit.onclick=()=>{document.getElementById('event-edit-id').value=ev.id;document.getElementById('ev-title').value=ev.title;document.getElementById('ev-type').value=ev.type;document.getElementById('ev-date').value=ev.date||'';document.getElementById('ev-notes').value=ev.notes||'';document.getElementById('cal-form').style.display='block';};
+    row.appendChild(body); body.onclick=()=>openEventEdit(ev);
+    const edit=document.createElement('button');edit.className='btn gray small';edit.textContent='Edit';edit.onclick=e=>{e.stopPropagation();openEventEdit(ev);};
     row.appendChild(edit);
     return row;
   }
@@ -1186,17 +1193,19 @@
   });
 
   // ---------- CLASSES ----------
+  function openClassEdit(c){document.getElementById('class-edit-id').value=c.id;document.getElementById('class-in-subject').value=c.subject;document.getElementById('class-in-room').value=c.room||'';document.getElementById('class-in-type').value=c.type;document.getElementById('class-in-start').value=c.start;document.getElementById('class-in-end').value=c.end;document.getElementById('class-in-notes').value=c.notes||'';document.querySelectorAll('#class-day-picker .exercise-chip').forEach(b=>b.classList.toggle('active',b.dataset.day===c.day));document.getElementById('class-form').style.display='block';document.getElementById('class-in-subject').focus();}
   function renderClassRow(wrap, c){
     const row = document.createElement('div'); row.className='class-row '+c.type;
     const metaBits = ['ROOM '+escapeHTML(c.room||'-')];
     row.innerHTML = '<div class="ctime">'+c.start+' \u2013 '+c.end+'</div>' +
       '<div style="flex:1;"><div class="csubject">'+escapeHTML(c.subject)+'</div><div class="croom">'+metaBits.join(' \u00b7 ')+'</div></div>' +
       '<span class="badge '+c.type+'">'+c.type+'</span>';
-    const edit=document.createElement('button');edit.className='btn gray small';edit.textContent='Edit';edit.onclick=()=>{document.getElementById('class-edit-id').value=c.id;document.getElementById('class-in-subject').value=c.subject;document.getElementById('class-in-room').value=c.room||'';document.getElementById('class-in-type').value=c.type;document.getElementById('class-in-start').value=c.start;document.getElementById('class-in-end').value=c.end;document.getElementById('class-in-notes').value=c.notes||'';document.querySelectorAll('#class-day-picker .exercise-chip').forEach(b=>b.classList.toggle('active',b.dataset.day===c.day));document.getElementById('class-form').style.display='block';};
+    const edit=document.createElement('button');edit.className='btn gray small';edit.textContent='Edit';edit.onclick=e=>{e.stopPropagation();openClassEdit(c);};
     const actions=document.createElement('div');actions.className='item-actions';actions.appendChild(edit);
     const del = document.createElement('button'); del.className='btn gray small'; del.textContent='Delete';
-    del.onclick = async ()=>{ state.classSchedule = state.classSchedule.filter(x=>x.id!==c.id); await save('classSchedule', state.classSchedule); renderClassesPage(); };
+    del.onclick = async e=>{e.stopPropagation();const idx=state.classSchedule.findIndex(x=>x.id===c.id),copy=JSON.parse(JSON.stringify(c));await animateOut(row);state.classSchedule.splice(idx,1);await save('classSchedule',state.classSchedule);renderClassesPage();offerUndo('Class deleted',async()=>{state.classSchedule.splice(Math.min(idx,state.classSchedule.length),0,copy);await save('classSchedule',state.classSchedule);renderClassesPage();});};
     actions.appendChild(del);row.appendChild(actions);
+    row.querySelector('.csubject').parentElement.onclick=()=>openClassEdit(c);
     wrap.appendChild(row);
   }
   function renderClassesPage(){
