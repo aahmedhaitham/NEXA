@@ -435,6 +435,7 @@
           <button class="btn small" id="habit-new-btn">+ New habit</button></div>
         <div class="card" id="habit-form" style="display:none;">
           <div class="field"><label>Habit name</label><input type="text" id="habit-in-name" placeholder="e.g. Read 10 pages"></div>
+          <div class="field"><label>Reminder time <span style="text-transform:none;font-weight:500;">(optional)</span></label><input type="time" id="habit-in-time"></div>
           <div class="grid2"><button class="btn gray" id="habit-cancel-btn">Cancel</button><button class="btn" id="habit-save-btn">Add habit</button></div>
         </div>
         <div class="card"><div id="habit-grid"></div></div>
@@ -804,7 +805,7 @@
     const log = state.habitLogs[todayKey()] || {};
     el.innerHTML = state.habits.length ? '<div class="dash-habits">'+state.habits.map(h=>{
       const done = !!log[h.id];
-      return '<button type="button" class="dash-habit'+(done?' done':'')+'" data-habit="'+h.id+'"><span>'+escapeHTML(h.name)+'</span><span class="dash-habit-mark">'+(done?'✓':'')+'</span></button>';
+      return '<button type="button" class="dash-habit'+(done?' done':'')+'" data-habit="'+h.id+'"><span>'+escapeHTML(h.name)+(h.time?'<small style="display:block;color:var(--muted);font-size:10px;margin-top:3px;">'+h.time+'</small>':'')+'</span><span class="dash-habit-mark">'+(done?'✓':'')+'</span></button>';
     }).join('')+'</div>' : '<div class="empty-state">No habits yet — add one in Health → Habits.</div>';
     el.querySelectorAll('[data-habit]').forEach(btn=>btn.addEventListener('click', async ()=>{
       const key=todayKey(); if(!state.habitLogs[key]) state.habitLogs[key]={};
@@ -1046,7 +1047,7 @@
       const row = document.createElement('div'); row.className='heat-row';
       let streak=0; for(let i=days.length-1;i>=0;i--){ if((state.habitLogs[days[i]]||{})[h.id]) streak++; else break; }
       const cellsHTML = days.map(d=>'<div class="heat-cell'+(((state.habitLogs[d]||{})[h.id])?' on':'')+'" data-date="'+d+'" data-habit="'+h.id+'"></div>').join('');
-      row.innerHTML = '<div class="heat-name">'+escapeHTML(h.name)+'</div><div class="heat-cells">'+cellsHTML+'</div><div class="heat-streak">'+streak+'d streak</div><button class="btn gray small" data-del-habit="'+h.id+'" style="margin-left:8px;">Delete</button>';
+      row.innerHTML = '<div class="heat-name">'+escapeHTML(h.name)+(h.time?'<div style="font-size:10px;color:var(--muted);margin-top:2px;">'+h.time+'</div>':'')+'</div><div class="heat-cells">'+cellsHTML+'</div><div class="heat-streak">'+streak+'d streak</div><button class="btn gray small" data-del-habit="'+h.id+'" style="margin-left:8px;">Delete</button>';
       wrap.appendChild(row);
     });
     wrap.querySelectorAll('[data-del-habit]').forEach(btn=>btn.addEventListener('click', async ()=>{
@@ -1375,9 +1376,10 @@
   document.getElementById('habit-save-btn').addEventListener('click', async ()=>{
     const name = document.getElementById('habit-in-name').value.trim();
     if(!name){ showToast('Name the habit.'); return; }
-    state.habits.push({id:'h-'+Date.now(), name, preset:false});
+    const time = document.getElementById('habit-in-time').value||null;
+    state.habits.push({id:'h-'+Date.now(), name, time, preset:false});
     await save('habits', state.habits);
-    document.getElementById('habit-in-name').value=''; document.getElementById('habit-form').style.display='none';
+    document.getElementById('habit-in-name').value=''; document.getElementById('habit-in-time').value=''; document.getElementById('habit-form').style.display='none';
     renderHabitGrid(); showToast('Habit added.');
   });
 
