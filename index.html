@@ -303,14 +303,8 @@
       </div>
 
       <div class="subpage active" data-group="tasks" id="tasks-sub-list">
-        <div class="row" style="margin-bottom:12px;"><p style="margin:0;">Projects, priorities, due dates.</p>
-          <button class="btn small" id="task-new-btn">+ New task</button></div>
+        <div class="row" style="margin-bottom:12px;"><div></div><button class="btn small" id="task-new-btn">+ New task</button></div>
         <div class="cols">
-          <div class="card">
-            <h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Projects</h3>
-            <div id="project-list"></div>
-            <button class="btn small gray full" id="add-project-btn" style="margin-top:10px;">+ New project</button>
-          </div>
           <div>
             <div class="card" id="task-form" style="display:none;">
               <div class="field"><label>Title</label><input type="text" id="task-in-title" placeholder="Task title"></div>
@@ -331,7 +325,6 @@
       </div>
 
       <div class="subpage" data-group="tasks" id="tasks-sub-subjects">
-        <p style="margin-bottom:12px;">Group study work by subject \u2014 e.g. "Mathematics" \u2192 "Complete Chapter 3". Linked automatically to matching Classes.</p>
         <div id="subjects-list"></div>
         <div class="card" id="subject-add-form">
           <div class="field" style="margin-bottom:10px;"><input type="text" id="subject-in-name" placeholder="New subject name"></div>
@@ -685,7 +678,7 @@
   }
   function renderSubtabContent(group, sub){
     if(group==='tasks'){
-      if(sub==='list'){ renderProjects(); renderTaskList(); }
+      if(sub==='list'){ renderTaskList(); }
       if(sub==='subjects') renderSubjectsPage();
     }
     if(group==='health'){
@@ -961,8 +954,7 @@
   function renderTaskList(){
     const wrap = document.getElementById('task-list');
     wrap.innerHTML = '';
-    const list = state.tasks.filter(t=> selectedProjectId==='inbox' ? !t.projectId : t.projectId===selectedProjectId)
-      .sort((a,b)=>(a.done-b.done)||(a.dueDate||'9999').localeCompare(b.dueDate||'9999'));
+    const list = state.tasks.slice().sort((a,b)=>(a.done-b.done)||(a.dueDate||'9999').localeCompare(b.dueDate||'9999'));
     if(!list.length){ wrap.innerHTML = '<p>No tasks here yet.</p>'; return; }
     list.forEach(t=>{
       const row = document.createElement('div'); row.className='task-row';
@@ -1301,7 +1293,7 @@
   document.getElementById('task-save-btn').addEventListener('click', async ()=>{
     const title = document.getElementById('task-in-title').value.trim();
     if(!title){ showToast('Give it a title.'); return; }
-    state.tasks.push({id:'t-'+Date.now(), projectId: selectedProjectId==='inbox'?null:selectedProjectId, title,
+    state.tasks.push({id:'t-'+Date.now(), title,
       dueDate: document.getElementById('task-in-due').value||null, priority: document.getElementById('task-in-priority').value,
       notes: document.getElementById('task-in-notes').value.trim(), done:false, subtasks:[]});
     await save('tasks', state.tasks);
@@ -1309,13 +1301,6 @@
     document.getElementById('task-form').style.display='none';
     renderTaskList(); renderStatbar(); showToast('Task added.');
   });
-  document.getElementById('add-project-btn').addEventListener('click', async ()=>{
-    const name = prompt('Project name:'); if(!name||!name.trim()) return;
-    const colors=['#FF3B5C','#4DA3FF','#33D67A','#FFC24B','#B072E8'];
-    state.projects.push({id:'p-'+Date.now(), name:name.trim(), color:colors[state.projects.length%colors.length]});
-    await save('projects', state.projects); renderProjects();
-  });
-
   document.getElementById('habit-new-btn').addEventListener('click', ()=>{ document.getElementById('habit-form').style.display='block'; });
   document.getElementById('habit-cancel-btn').addEventListener('click', ()=>{ document.getElementById('habit-form').style.display='none'; });
   document.getElementById('habit-save-btn').addEventListener('click', async ()=>{
