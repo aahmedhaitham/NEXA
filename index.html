@@ -172,9 +172,11 @@
   .day-header:first-child{margin-top:0;}
   .class-row{display:flex;align-items:center;gap:14px;background:var(--panel);backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);border:1px solid var(--border);border-radius:14px;
     padding:12px 14px;margin-bottom:8px;border-left:4px solid var(--gray);}
-  .class-row.lecture{border-left-color:var(--coral);}
-  .class-row.lab{border-left-color:var(--gold);}
-  .class-row.tutorial{border-left-color:var(--blue);}
+  .class-row.lecture{border-left-color:var(--coral)!important;}
+  .class-row.lab{border-left-color:var(--gold)!important;}
+  .class-row.tutorial{border-left-color:var(--blue)!important;}
+  .class-row.passed{opacity:.62;}
+  .class-passed{font-size:10px;font-weight:800;letter-spacing:.04em;color:var(--muted);border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:4px 7px;margin-left:7px;white-space:nowrap;}
   .class-row .ctime{font-size:12.5px;font-weight:700;color:var(--muted);width:110px;flex-shrink:0;}
   .class-row .csubject{flex:1;font-weight:700;font-size:14px;}
   .class-row .croom{font-size:11.5px;color:var(--muted);}
@@ -1262,6 +1264,13 @@
     if(added){ await save('subjects', state.subjects); showToast(added+' subject(s) created \u2014 check Tasks > Subjects.'); }
     else showToast('All classes already have a matching subject.');
   });
+  function classHasPassed(c){
+    if(!c || !c.end) return false;
+    const now = new Date();
+    const parts = String(c.end).split(':').map(Number);
+    if(parts.length<2 || !Number.isFinite(parts[0]) || !Number.isFinite(parts[1])) return false;
+    return now.getHours()*60+now.getMinutes() > parts[0]*60+parts[1];
+  }
   function renderWidgetClasses(el){
     const day = todayDayCode();
     const classes = state.classSchedule.filter(c=>c.day===day||c.day==='daily').sort((a,b)=>a.start.localeCompare(b.start));
@@ -1269,7 +1278,8 @@
     if(!classes.length){ el.innerHTML = '<p>No classes today.</p>'; return; }
     classes.forEach(c=>{
       const row = document.createElement('div');
-      row.className = 'class-row '+c.type;
+      const passed = classHasPassed(c);
+      row.className = 'class-row '+c.type+(passed?' passed':'');
       row.style.marginBottom = '8px';
       const metaBits = [];
       if(c.room) metaBits.push('ROOM '+escapeHTML(c.room));
