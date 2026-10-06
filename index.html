@@ -295,6 +295,11 @@
   .sparkle-wrap{display:inline-flex;align-items:center;gap:6px;}
   .spark-icon{flex-shrink:0;}
   .spark-icon path{fill:url(#sparkGrad);}
+  .nexa-confirm-backdrop{position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.58);display:flex;align-items:flex-end;justify-content:center;padding:18px;padding-bottom:calc(18px + env(safe-area-inset-bottom));animation:fadein .16s ease}
+  .nexa-confirm{width:min(100%,430px);background:#1d2026;border:1px solid rgba(255,255,255,.13);border-radius:20px;padding:18px;box-shadow:0 18px 60px rgba(0,0,0,.45);animation:sheetin .2s ease}
+  .nexa-confirm h3{font-size:18px;margin:0 0 6px}.nexa-confirm p{margin:0 0 16px;line-height:1.4}.nexa-confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.nexa-confirm-actions .btn{width:100%;margin:0!important}
+  @keyframes sheetin{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+  @media(max-width:520px){.grid4{grid-template-columns:1fr 1fr}.card table{display:block;max-width:100%;overflow-x:auto}.row{min-width:0}.row>h3,.row>p{min-width:0}.row select{max-width:52vw}.task-row{gap:9px}.task-row .btn.small{flex-shrink:0}.notify-row{grid-template-columns:minmax(0,1fr) minmax(118px,145px)}#settings-sub-general .card,#health-sub-training .card,#health-sub-nutrition .card,#health-sub-habits .card,#page-tasks .card,#page-calendar .card{min-width:0;max-width:100%;overflow:hidden}}
 </style>
   <!-- deploy-refresh-20261004 -->
 </head>
@@ -553,7 +558,7 @@
         <div id="class-days-wrap"></div>
         <div class="card">
           <p>Create a Subject for each class so study tasks can be tagged by course.</p>
-          <button class="btn secondary small" id="class-make-projects-btn" style="margin-top:8px;">Create subjects from classes</button>
+          <button class="btn secondary small" id="class-make-subjects-btn" style="margin-top:8px;">Create subjects from classes</button>
         </div>
       </div>
     </section>
@@ -618,16 +623,16 @@
     state.config = await safeGet('config', {plan:DEFAULT_PLAN, settings:{notifications:{classes:true,habits:true,prayer:true,events:true},notificationLead:{classes:15,habits:0,prayer:0,events:0}}, dashboardOrder:['classes','train','nutrition','habits','tasks','calendar','prayer']});
     if(!state.config.plan) state.config.plan = DEFAULT_PLAN;
     if(!state.config.settings) state.config.settings = {};
-    if(!state.config.settings.notifications) state.config.settings.notifications = {classes:true,tasks:true,habits:true,prayer:true,events:true};
-    delete state.config.settings.notifications.creatine; delete state.config.settings.creatineTime; delete state.config.creatine; delete state.config.dashboardVisibility;
-    if(!state.config.settings.notificationLead) state.config.settings.notificationLead={classes:15,tasks:0,habits:0,prayer:0,events:0};
+    if(!state.config.settings.notifications) state.config.settings.notifications = {classes:true,habits:true,prayer:true,events:true};
+    delete state.config.settings.notifications.tasks;
+    if(!state.config.settings.notificationLead) state.config.settings.notificationLead={classes:15,habits:0,prayer:0,events:0}; delete state.config.settings.notificationLead.tasks;
     if(!state.config.dashboardOrder) state.config.dashboardOrder = ['classes','train','nutrition','habits','tasks','calendar','prayer'];
-    state.config.dashboardOrder=state.config.dashboardOrder.filter(id=>id!=='creatine');
+    
     state.nutrition = await safeGet('nutrition', {});
     state.tasks = await safeGet('tasks', []);
     const somedayEvents=state.events.filter(e=>!e.date);
-    if(somedayEvents.length){somedayEvents.forEach(e=>{if(!state.tasks.some(t=>t.id==='from-'+e.id))state.tasks.push({id:'from-'+e.id,title:e.title,notes:e.notes||'',done:!!e.done,subtasks:[],dueDate:null,priority:null});});state.events=state.events.filter(e=>!!e.date);localStorage.setItem('cb_tasks',JSON.stringify(state.tasks));localStorage.setItem('cb_events',JSON.stringify(state.events));}
-    state.tasks.forEach(t=>{t.dueDate=null;t.priority=null;});
+    if(somedayEvents.length){somedayEvents.forEach(e=>{if(!state.tasks.some(t=>t.id==='from-'+e.id))state.tasks.push({id:'from-'+e.id,title:e.title,notes:e.notes||'',done:!!e.done,subtasks:[]});});state.events=state.events.filter(e=>!!e.date);localStorage.setItem('cb_tasks',JSON.stringify(state.tasks));localStorage.setItem('cb_events',JSON.stringify(state.events));}
+    state.tasks.forEach(t=>{delete t.dueDate;delete t.priority;});
     state.habits = await safeGet('habits', DEFAULT_HABITS);
     state.habitLogs = await safeGet('habitLogs', {});
     state.health = await safeGet('health', {steps:{}, sleep:{}, weight:[]});
@@ -638,6 +643,7 @@
 
   function escapeHTML(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
   function showToast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),3000); }
+  function nexaConfirm(title,message,confirmLabel='Delete'){return new Promise(resolve=>{const bg=document.createElement('div');bg.className='nexa-confirm-backdrop';bg.innerHTML='<div class="nexa-confirm" role="dialog" aria-modal="true"><h3>'+escapeHTML(title)+'</h3><p>'+escapeHTML(message)+'</p><div class="nexa-confirm-actions"><button class="btn gray" data-cancel>Cancel</button><button class="btn" style="background:#c0392b" data-confirm>'+escapeHTML(confirmLabel)+'</button></div></div>';document.body.appendChild(bg);const finish=v=>{bg.remove();resolve(v)};bg.querySelector('[data-cancel]').onclick=()=>finish(false);bg.querySelector('[data-confirm]').onclick=()=>finish(true);bg.onclick=e=>{if(e.target===bg)finish(false)};});}
   let undoTimer=null,undoEl=null;
   function offerUndo(label,fn){if(undoEl)undoEl.remove();if(undoTimer)clearTimeout(undoTimer);undoEl=document.createElement('div');undoEl.className='undo-toast';undoEl.innerHTML='<span>'+escapeHTML(label)+'</span><button type="button">UNDO</button>';document.body.appendChild(undoEl);undoEl.querySelector('button').onclick=async()=>{clearTimeout(undoTimer);undoEl.remove();undoEl=null;await fn();};undoTimer=setTimeout(()=>{if(undoEl)undoEl.remove();undoEl=null;},5000);}
   function animateOut(el,cls='item-remove'){return new Promise(resolve=>{el.classList.add(cls);setTimeout(resolve,180);});}
@@ -853,10 +859,6 @@
       grid.appendChild(w);
       def.render(w.querySelector('.widget-body'));
     });
-    hb.querySelectorAll('[data-show]').forEach(a=>a.addEventListener('click', async e=>{
-      e.preventDefault(); state.config.dashboardVisibility[a.dataset.show] = true;
-      await save('config', state.config); renderDashboard();
-    }));
   }
 
   // ---------- TRAIN ----------
@@ -1008,7 +1010,7 @@
     });
     wrap.querySelectorAll('[data-edit-habit]').forEach(btn=>btn.addEventListener('click',()=>{const h=state.habits.find(x=>x.id===btn.dataset.editHabit);if(!h)return;document.getElementById('habit-edit-id').value=h.id;document.getElementById('habit-in-name').value=h.name;document.getElementById('habit-in-time').value=h.time||'';document.getElementById('habit-form').style.display='block';document.getElementById('habit-in-name').focus();}));
     wrap.querySelectorAll('[data-del-habit]').forEach(btn=>btn.addEventListener('click', async ()=>{
-      if(!confirm('Delete this habit? Its history will be removed too.')) return;
+      if(!await nexaConfirm('Delete habit?','Its history will be removed too.')) return;
       const hid = btn.dataset.delHabit;
       const idx=state.habits.findIndex(h=>h.id===hid),copy=JSON.parse(JSON.stringify(state.habits[idx])),history={};Object.keys(state.habitLogs).forEach(d=>{if(state.habitLogs[d]?.[hid]!==undefined)history[d]=state.habitLogs[d][hid];});
       state.habits.splice(idx,1);Object.keys(state.habitLogs).forEach(d=>{delete state.habitLogs[d][hid];});
@@ -1157,7 +1159,7 @@
       const delSubject = document.createElement('button');
       delSubject.className = 'btn gray small'; delSubject.textContent = 'Delete subject'; delSubject.style.marginTop = '10px';
       delSubject.onclick = async () => {
-        if(!confirm('Delete "'+s.name+'" and all its items?')) return;
+        if(!await nexaConfirm('Delete subject?','Delete "'+s.name+'" and all its items?')) return;
         state.subjects = state.subjects.filter(x=>x.id!==s.id);
         state.subjectItems = state.subjectItems.filter(x=>x.subjectId!==s.id);
         await save('subjects', state.subjects); await save('subjectItems', state.subjectItems);
@@ -1250,7 +1252,7 @@
     document.getElementById('class-form').style.display='none';
     renderClassesPage(); showToast('Class added, and linked to a Subject automatically.');
   });
-  document.getElementById('class-make-projects-btn').addEventListener('click', async ()=>{
+  document.getElementById('class-make-subjects-btn').addEventListener('click', async ()=>{
     const names = Array.from(new Set(state.classSchedule.map(c=>c.subject)));
     let added = 0;
     names.forEach(name=>{
@@ -1309,7 +1311,7 @@
     const title = document.getElementById('task-in-title').value.trim();
     if(!title){ showToast('Give it a title.'); return; }
     const editId=document.getElementById('task-edit-id').value;
-    const vals={title,notes:document.getElementById('task-in-notes').value.trim(),dueDate:null,priority:null};
+    const vals={title,notes:document.getElementById('task-in-notes').value.trim()};
     if(editId){const t=state.tasks.find(x=>x.id===editId);if(t)Object.assign(t,vals);}else state.tasks.push({id:'t-'+Date.now(),...vals,done:false,subtasks:[]});
     await save('tasks', state.tasks);
     document.getElementById('task-in-title').value=''; document.getElementById('task-in-notes').value=''; document.getElementById('task-edit-id').value='';
@@ -1353,7 +1355,7 @@
     renderNutritionPage(); showToast('Logged.');
   });
   document.getElementById('nut-reset-btn').addEventListener('click', async ()=>{
-    if(!confirm('Reset today\'s totals?')) return;
+    if(!await nexaConfirm('Reset nutrition?','Reset today\'s totals?','Reset')) return;
     state.nutrition[todayKey()] = {calories:0,protein:0,carbs:0,fat:0};
     await save('nutrition', state.nutrition); renderNutritionPage();
   });
@@ -1393,11 +1395,11 @@
     showToast('Saved.');
   });
   document.getElementById('reset-btn').addEventListener('click', async ()=>{
-    if(!confirm('This deletes everything. Continue?')) return;
+    if(!await nexaConfirm('Reset all data?','This permanently deletes all Nexa data on this device.','Reset everything')) return;
     localStorage.clear();
     state = {exercises:JSON.parse(JSON.stringify(DEFAULT_EXERCISES)), logs:[], events:[], nutrition:{}, tasks:[], habits:JSON.parse(JSON.stringify(DEFAULT_HABITS)), habitLogs:{},
       classSchedule:[], subjects:[], subjectItems:[], health:{steps:{},sleep:{},weight:[]},
-      config:{plan:Object.assign({},DEFAULT_PLAN), settings:{notifications:{classes:true,tasks:true,habits:true,prayer:true,events:true},notificationLead:{classes:15,tasks:0,habits:0,prayer:0,events:0}}, dashboardOrder:['classes','train','nutrition','habits','tasks','calendar','prayer']}};
+      config:{plan:Object.assign({},DEFAULT_PLAN), settings:{notifications:{classes:true,habits:true,prayer:true,events:true},notificationLead:{classes:15,habits:0,prayer:0,events:0}}, dashboardOrder:['classes','train','nutrition','habits','tasks','calendar','prayer']}};
     for(const k of ['exercises','logs','events','nutrition','tasks','habits','habitLogs','classSchedule','subjects','subjectItems','health','config']) await save(k, state[k]);
     showToast('All data reset.'); gotoPage('today');
   });
