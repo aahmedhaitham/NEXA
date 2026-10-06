@@ -184,6 +184,12 @@
   .dash-habit-mark{width:22px;height:22px;border-radius:7px;border:1px solid rgba(255,255,255,.18);display:grid;place-items:center;flex-shrink:0;color:var(--green);}
   .dash-task{display:flex;align-items:center;gap:11px;padding:11px 12px;margin-bottom:8px;background:var(--surface2);border:1px solid var(--hairline);border-radius:14px;}
   .dash-task:last-child{margin-bottom:0}.dash-task-main{flex:1;min-width:0}.dash-task-title{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dash-task-date{font-size:10.5px;color:var(--muted);margin-top:3px;}
+  .dash-task.overdue,.task-row.overdue{border-color:rgba(255,90,43,.45);background:rgba(255,90,43,.07)} .overdue-text{color:var(--coral)!important;font-weight:800}
+  .class-live{color:var(--green);border-color:rgba(51,214,122,.35);background:rgba(51,214,122,.08)} .class-soon{color:var(--gold);border-color:rgba(255,194,75,.35);background:rgba(255,194,75,.08)}
+  .empty-state{text-align:center;padding:18px 10px;border:1px dashed rgba(255,255,255,.13);border-radius:14px;color:var(--muted);font-size:12.5px;background:rgba(255,255,255,.025)}
+  .progress-cell{display:flex;align-items:center;gap:10px}.progress-ring{--p:0;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--green) calc(var(--p)*1%),rgba(255,255,255,.08) 0);position:relative;flex-shrink:0}.progress-ring:after{content:'';position:absolute;inset:5px;border-radius:50%;background:var(--surface)}.progress-ring span{position:relative;z-index:1;font-size:10px;font-weight:800}
+  .notify-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.notify-toggle{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface2);border:1px solid var(--hairline);border-radius:12px;padding:10px 11px;font-size:12px;font-weight:700}.notify-toggle input{accent-color:var(--coral);width:18px;height:18px}
+  .task-row{transition:transform .16s ease,opacity .16s ease}.task-row.swiping{transition:none}
 
   .class-row .ctime{font-size:12.5px;font-weight:700;color:var(--muted);width:110px;flex-shrink:0;}
   .class-row .csubject{flex:1;font-weight:700;font-size:14px;}
@@ -491,6 +497,14 @@
           <div class="card">
             <h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Notifications</h3>
             <p id="notification-status">Notifications are off.</p>
+            <div class="notify-grid">
+              <label class="notify-toggle">Classes <input type="checkbox" id="notify-classes"></label>
+              <label class="notify-toggle">Tasks <input type="checkbox" id="notify-tasks"></label>
+              <label class="notify-toggle">Habits <input type="checkbox" id="notify-habits"></label>
+              <label class="notify-toggle">Prayer <input type="checkbox" id="notify-prayer"></label>
+              <label class="notify-toggle">Events <input type="checkbox" id="notify-events"></label>
+              <label class="notify-toggle">Creatine <input type="checkbox" id="notify-creatine"></label>
+            </div>
             <button class="btn secondary" id="enable-notifications-btn">Enable notifications</button>
           </div>
           <div class="card">
@@ -602,9 +616,10 @@
     state.exercises = await safeGet('exercises', DEFAULT_EXERCISES);
     state.logs = await safeGet('logs', []);
     state.events = await safeGet('events', []);
-    state.config = await safeGet('config', {plan:DEFAULT_PLAN, settings:{creatineTime:'08:00'}, creatine:{}, dashboardOrder:['classes','train','nutrition','habits','tasks','calendar','prayer','creatine'], dashboardVisibility:{}});
+    state.config = await safeGet('config', {plan:DEFAULT_PLAN, settings:{creatineTime:'08:00',notifications:{classes:true,tasks:true,habits:true,prayer:true,events:true,creatine:true}}, creatine:{}, dashboardOrder:['classes','train','nutrition','habits','tasks','calendar','prayer','creatine'], dashboardVisibility:{}});
     if(!state.config.plan) state.config.plan = DEFAULT_PLAN;
     if(!state.config.settings) state.config.settings = {creatineTime:'08:00'};
+    if(!state.config.settings.notifications) state.config.settings.notifications = {classes:true,tasks:true,habits:true,prayer:true,events:true,creatine:true};
     if(!state.config.creatine) state.config.creatine = {};
     if(!state.config.dashboardOrder) state.config.dashboardOrder = ['classes','train','nutrition','habits','tasks','calendar','prayer','creatine'];
     if(!state.config.dashboardVisibility) state.config.dashboardVisibility = {};
@@ -621,6 +636,7 @@
 
   function escapeHTML(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
   function showToast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),3000); }
+  function haptic(ms=12){ try{ if(navigator.vibrate) navigator.vibrate(ms); }catch(_){} }
   function downloadCSV(filename, rows){
     const csv = rows.map(r=>r.map(c=>'"'+String(c==null?'':c).replace(/"/g,'""')+'"').join(',')).join('\n');
     const blob = new Blob([csv],{type:'text/csv'});
@@ -732,16 +748,20 @@
 
   // ---------- DASHBOARD ----------
   function renderStatbar(){
-    const doneToday = Object.values((state.habitLogs[todayKey()]||{})).filter(Boolean).length;
+    const log = state.habitLogs[todayKey()]||{};
+    const doneHabits = state.habits.filter(h=>!!log[h.id]).length;
+    const dueTasks = state.tasks.filter(t=>!t.done && (!t.dueDate || t.dueDate<=todayKey()));
+    const doneDue = state.tasks.filter(t=>t.done && t.dueDate===todayKey()).length;
+    const total = state.habits.length + dueTasks.length + doneDue;
+    const done = doneHabits + doneDue;
+    const pct = total ? Math.round(done/total*100) : 100;
     const tasksOpen = state.tasks.filter(t=>!t.done).length;
-    const wrap = document.getElementById('statbar');
-    wrap.innerHTML = '';
-    [['Open tasks',tasksOpen],['Habits today',doneToday+'/'+state.habits.length]]
-      .forEach(([lbl,num])=>{
-        const c = document.createElement('div'); c.className='statcell';
-        c.innerHTML = '<div class="num">'+num+'</div><div class="lbl">'+lbl+'</div>';
-        wrap.appendChild(c);
-      });
+    const wrap = document.getElementById('statbar'); wrap.innerHTML='';
+    [['Open tasks',tasksOpen],['Habits today',doneHabits+'/'+state.habits.length]].forEach(([lbl,num])=>{
+      const cell=document.createElement('div'); cell.className='statcell'; cell.innerHTML='<div class="num">'+num+'</div><div class="lbl">'+lbl+'</div>'; wrap.appendChild(cell);
+    });
+    const pc=document.createElement('div'); pc.className='statcell progress-cell'; pc.style.gridColumn='1 / -1';
+    pc.innerHTML='<div class="progress-ring" style="--p:'+pct+'"><span>'+pct+'%</span></div><div><div style="font-weight:800;font-size:15px;">Today progress</div><div class="lbl">'+done+' of '+total+' complete</div></div>'; wrap.appendChild(pc);
   }
   const WIDGET_DEFS = {
     classes:{title:'Today\u2019s Classes', render:renderWidgetClasses},
@@ -785,16 +805,24 @@
     el.innerHTML = state.habits.length ? '<div class="dash-habits">'+state.habits.map(h=>{
       const done = !!log[h.id];
       return '<button type="button" class="dash-habit'+(done?' done':'')+'" data-habit="'+h.id+'"><span>'+escapeHTML(h.name)+'</span><span class="dash-habit-mark">'+(done?'✓':'')+'</span></button>';
-    }).join('')+'</div>' : '<p>No habits yet.</p>';
+    }).join('')+'</div>' : '<div class="empty-state">No habits yet — add one in Health → Habits.</div>';
     el.querySelectorAll('[data-habit]').forEach(btn=>btn.addEventListener('click', async ()=>{
       const key=todayKey(); if(!state.habitLogs[key]) state.habitLogs[key]={};
-      state.habitLogs[key][btn.dataset.habit] = !state.habitLogs[key][btn.dataset.habit];
+      state.habitLogs[key][btn.dataset.habit] = !state.habitLogs[key][btn.dataset.habit]; haptic();
       await save('habitLogs', state.habitLogs); renderDashboard();
     }));
   }
   function renderWidgetTasks(el){
-    const upcoming = state.tasks.filter(t=>!t.done).sort((a,b)=>(a.dueDate||'9999').localeCompare(b.dueDate||'9999')).slice(0,5);
-    el.innerHTML = upcoming.length ? upcoming.map(t=>'<div class="dash-task"><div class="dash-task-main"><div class="dash-task-title">'+escapeHTML(t.title)+'</div><div class="dash-task-date">'+(t.dueDate?(t.dueDate===todayKey()?'DUE TODAY':'Due '+t.dueDate):'NO DUE DATE')+'</div></div><span class="badge '+t.priority+'">'+t.priority+'</span></div>').join('') : '<p>Nothing due. Nice.</p>';
+    const today=todayKey();
+    const upcoming=state.tasks.filter(t=>!t.done).sort((a,b)=>{
+      const ao=!!a.dueDate&&a.dueDate<today, bo=!!b.dueDate&&b.dueDate<today;
+      return (bo-ao)||(a.dueDate||'9999').localeCompare(b.dueDate||'9999');
+    }).slice(0,5);
+    el.innerHTML=upcoming.length?upcoming.map(t=>{
+      const overdue=!!t.dueDate&&t.dueDate<today;
+      const dateText=overdue?'OVERDUE · '+t.dueDate:(t.dueDate===today?'DUE TODAY':t.dueDate?'Due '+t.dueDate:'NO DUE DATE');
+      return '<div class="dash-task'+(overdue?' overdue':'')+'"><div class="dash-task-main"><div class="dash-task-title">'+escapeHTML(t.title)+'</div><div class="dash-task-date'+(overdue?' overdue-text':'')+'">'+dateText+'</div></div><span class="badge '+t.priority+'">'+t.priority+'</span></div>';
+    }).join(''):'<div class="empty-state">All clear — nothing due soon.</div>';
   }
   function renderWidgetCalendar(el){
     const upcoming = state.events.filter(e=>e.date && e.date>=todayKey()).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,5);
@@ -968,21 +996,26 @@
   function renderTaskList(){
     const wrap = document.getElementById('task-list');
     wrap.innerHTML = '';
-    const list = state.tasks.slice().sort((a,b)=>(a.done-b.done)||(a.dueDate||'9999').localeCompare(b.dueDate||'9999'));
-    if(!list.length){ wrap.innerHTML = '<p>No tasks here yet.</p>'; return; }
+    const today=todayKey();
+    const list = state.tasks.slice().sort((a,b)=>(a.done-b.done)||((!!b.dueDate&&b.dueDate<today)-(!!a.dueDate&&a.dueDate<today))||(a.dueDate||'9999').localeCompare(b.dueDate||'9999'));
+    if(!list.length){ wrap.innerHTML = '<div class="empty-state">No tasks yet — enjoy the clear list.</div>'; return; }
     list.forEach(t=>{
-      const row = document.createElement('div'); row.className='task-row';
+      const row = document.createElement('div'); const overdue=!t.done&&!!t.dueDate&&t.dueDate<today; row.className='task-row'+(overdue?' overdue':'');
       const check = document.createElement('button'); check.className='checkbtn'+(t.done?' checked':''); check.textContent=t.done?'\u2713':'';
-      check.onclick = async ()=>{ t.done=!t.done; await save('tasks', state.tasks); renderTaskList(); renderStatbar(); };
+      check.onclick = async ()=>{ t.done=!t.done; haptic(); await save('tasks', state.tasks); renderTaskList(); renderStatbar(); };
       const body = document.createElement('div'); body.style.flex='1';
       const subDone = (t.subtasks||[]).filter(s=>s.done).length;
       body.innerHTML = '<div class="ttitle'+(t.done?' done':'')+'">'+escapeHTML(t.title)+'</div><div class="task-meta">'+
-        '<span class="badge '+t.priority+'">'+t.priority+'</span>' + (t.dueDate?'<span>'+t.dueDate+'</span>':'') +
+        '<span class="badge '+t.priority+'">'+t.priority+'</span>' + (t.dueDate?'<span class="'+(overdue?'overdue-text':'')+'">'+(overdue?'OVERDUE · ':'')+t.dueDate+'</span>':'') +
         ((t.subtasks&&t.subtasks.length)?'<span>'+subDone+'/'+t.subtasks.length+' subtasks</span>':'') + '</div>';
       row.appendChild(check); row.appendChild(body);
       const del = document.createElement('button'); del.className='btn gray small'; del.textContent='Delete';
       del.onclick = async ()=>{ state.tasks = state.tasks.filter(x=>x.id!==t.id); await save('tasks', state.tasks); renderTaskList(); renderStatbar(); };
       row.appendChild(del);
+      let sx=0,dx=0;
+      row.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;dx=0;row.classList.add('swiping')},{passive:true});
+      row.addEventListener('touchmove',e=>{dx=e.touches[0].clientX-sx;if(Math.abs(dx)>8)row.style.transform='translateX('+Math.max(-90,Math.min(90,dx))+'px)'},{passive:true});
+      row.addEventListener('touchend',async()=>{row.classList.remove('swiping');row.style.transform='';if(dx>70){t.done=true;haptic();await save('tasks',state.tasks);renderTaskList();renderStatbar();}else if(dx<-70){haptic();state.tasks=state.tasks.filter(x=>x.id!==t.id);await save('tasks',state.tasks);renderTaskList();renderStatbar();}});
       wrap.appendChild(row);
       (t.subtasks||[]).forEach(st=>{
         const sr = document.createElement('div'); sr.className='subtask-row';
@@ -1270,6 +1303,15 @@
     if(added){ await save('subjects', state.subjects); showToast(added+' subject(s) created \u2014 check Tasks > Subjects.'); }
     else showToast('All classes already have a matching subject.');
   });
+  function classStatus(c){
+    if(!c?.start||!c?.end) return null;
+    const now=new Date(), cur=now.getHours()*60+now.getMinutes();
+    const sm=c.start.split(':').map(Number), em=c.end.split(':').map(Number), s=sm[0]*60+sm[1], e=em[0]*60+em[1];
+    if(cur>=s&&cur<=e) return {label:'NOW',cls:'class-live'};
+    if(cur<s&&s-cur<=60) return {label:'IN '+(s-cur)+' MIN',cls:'class-soon'};
+    if(cur>e) return {label:'PASSED',cls:'class-passed'};
+    return null;
+  }
   function classHasPassed(c){
     if(!c || !c.end) return false;
     const now = new Date();
@@ -1284,7 +1326,7 @@
     if(!classes.length){ el.innerHTML = '<p>No classes today.</p>'; return; }
     classes.forEach(c=>{
       const row = document.createElement('div');
-      const passed = classHasPassed(c);
+      const status = classStatus(c), passed = status?.label==='PASSED';
       row.className = 'class-row '+c.type+(passed?' passed':'');
       row.style.marginBottom = '8px';
       const metaBits = [];
@@ -1377,6 +1419,8 @@
 
   document.getElementById('save-settings-btn').addEventListener('click', async ()=>{
     state.config.settings.creatineTime = document.getElementById('settings-creatine-time').value||'08:00';
+    state.config.settings.notifications={};
+    ['classes','tasks','habits','prayer','events','creatine'].forEach(k=>state.config.settings.notifications[k]=document.getElementById('notify-'+k).checked);
     await save('config', state.config);
     try{
       if(Notification.permission==='granted'){
@@ -1401,6 +1445,8 @@
     await loadAll();
     const now = new Date(); calYear=now.getFullYear(); calMonth=now.getMonth();
     document.getElementById('settings-creatine-time').value = state.config.settings.creatineTime||'08:00';
+    const ns=state.config.settings.notifications;
+    ['classes','tasks','habits','prayer','events','creatine'].forEach(k=>{const el=document.getElementById('notify-'+k);if(el)el.checked=ns[k]!==false;});
     renderTabbar();
     wireSubtabs();
     document.getElementById('loading').style.display='none';
@@ -1441,7 +1487,8 @@
           events:JSON.parse(localStorage.getItem('cb_events')||'[]'),
           habits:JSON.parse(localStorage.getItem('cb_habits')||'[]'),
           habitLogs:JSON.parse(localStorage.getItem('cb_habitLogs')||'{}'),
-          classes:JSON.parse(localStorage.getItem('cb_classSchedule')||'[]')
+          classes:JSON.parse(localStorage.getItem('cb_classSchedule')||'[]'),
+          notificationSettings:(JSON.parse(localStorage.getItem('cb_config')||'{}').settings||{}).notifications||{classes:true,tasks:true,habits:true,prayer:true,events:true,creatine:true}
         }
       })
     });
