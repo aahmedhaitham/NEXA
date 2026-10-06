@@ -742,6 +742,19 @@
       });
     });
   }
+  // Keep normal vertical scrolling, but stop iOS from dragging the page background past its top/bottom edges.
+  const mainScroll=document.getElementById('main-scroll');
+  let mainTouchY=0;
+  mainScroll.addEventListener('touchstart',e=>{if(e.touches.length===1) mainTouchY=e.touches[0].clientY;},{passive:true});
+  mainScroll.addEventListener('touchmove',e=>{
+    if(e.touches.length!==1) return;
+    const y=e.touches[0].clientY, dy=y-mainTouchY;
+    const atTop=mainScroll.scrollTop<=0;
+    const atBottom=mainScroll.scrollTop+mainScroll.clientHeight>=mainScroll.scrollHeight-1;
+    if((atTop&&dy>0)||(atBottom&&dy<0)) e.preventDefault();
+    mainTouchY=y;
+  },{passive:false});
+
   const tabbarLock=document.getElementById('tabbar');
   tabbarLock.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
   tabbarLock.addEventListener('dragstart',e=>e.preventDefault());
