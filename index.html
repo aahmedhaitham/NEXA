@@ -833,7 +833,7 @@
       const def = WIDGET_DEFS[id]; if(!def) return;
       const w = document.createElement('div');
       w.className = 'widget'; w.draggable = true; w.dataset.id = id;
-      w.innerHTML = '<div class="widget-head"><h3>'+def.title+'</h3><button class="widget-hide" data-hide="'+id+'">\u2715</button></div><div class="widget-body"></div>';
+      w.innerHTML = '<div class="widget-head"><h3>'+def.title+'</h3></div><div class="widget-body"></div>';
       w.addEventListener('dragstart', ()=>{ dragId=id; w.classList.add('dragging'); });
       w.addEventListener('dragend', ()=>{ w.classList.remove('dragging'); });
       w.addEventListener('dragover', e=>e.preventDefault());
