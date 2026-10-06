@@ -248,6 +248,10 @@
   .heat-cell{width:16px;height:16px;border-radius:4px;background:rgba(255,255,255,0.05);}
   .heat-cell.on{background:var(--green);}
   .heat-streak{width:60px;text-align:right;font-size:12px;color:var(--muted);font-weight:700;flex-shrink:0;}
+  .quick-done{min-width:58px;min-height:34px;padding:7px 10px!important;font-size:11px!important;border-radius:10px!important;flex-shrink:0}.quick-done.done{background:rgba(51,214,122,.13);color:var(--green)}
+  .edit-actions{display:flex;gap:6px;flex-shrink:0}
+  .heat-row{min-width:0}.heat-cells{min-width:0;overflow-x:auto;padding-bottom:2px}.heat-name{min-width:76px;max-width:110px;overflow:hidden;text-overflow:ellipsis}.heat-row .btn{flex-shrink:0}
+  @media(max-width:520px){.heat-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px}.heat-name{width:auto;max-width:none;grid-column:1}.heat-cells{grid-column:1/-1;grid-row:2;width:100%}.heat-streak{width:auto;grid-column:2;grid-row:1}.heat-row>.btn{grid-column:3;grid-row:1}.task-row{min-width:0}.task-row .btn{padding:8px 10px}.dash-event{min-width:0}.dash-event-main{min-width:0}.grid2{min-width:0}.card,.widget{max-width:100%;overflow:hidden}}
 
 
   .nutri-row{margin-bottom:12px;}
@@ -319,7 +323,7 @@
         <div class="row" style="margin-bottom:12px;"><div></div><button class="btn small" id="task-new-btn">+ New task</button></div>
         <div class="cols">
           <div>
-            <div class="card" id="task-form" style="display:none;">
+            <div class="card" id="task-form" style="display:none;"><input type="hidden" id="task-edit-id">
               <div class="field"><label>Title</label><input type="text" id="task-in-title" placeholder="Task title"></div>
               <div class="grid2">
                 <div class="field"><label>Due date</label><input type="date" id="task-in-due"></div>
@@ -432,7 +436,7 @@
       <div class="subpage" data-group="health" id="health-sub-habits">
         <div class="row" style="margin-bottom:12px;"><p style="margin:0;">Daily check-ins, streaks, last 14 days.</p>
           <button class="btn small" id="habit-new-btn">+ New habit</button></div>
-        <div class="card" id="habit-form" style="display:none;">
+        <div class="card" id="habit-form" style="display:none;"><input type="hidden" id="habit-edit-id">
           <div class="field"><label>Habit name</label><input type="text" id="habit-in-name" placeholder="e.g. Read 10 pages"></div>
           <div class="field"><label>Reminder time <span style="text-transform:none;font-weight:500;">(optional)</span></label><input type="time" id="habit-in-time"></div>
           <div class="grid2"><button class="btn gray" id="habit-cancel-btn">Cancel</button><button class="btn" id="habit-save-btn">Add habit</button></div>
@@ -456,7 +460,7 @@
           <div class="cal-grid" id="cal-grid" style="margin-top:4px;"></div>
         </div>
         <div>
-          <div class="card" id="cal-form" style="display:none;">
+          <div class="card" id="cal-form" style="display:none;"><input type="hidden" id="event-edit-id">
             <div class="field"><label>Title</label><input type="text" id="ev-title" placeholder="e.g. Watch course lecture 4"></div>
             <div class="grid2">
               <div class="field"><label>Type</label><select id="ev-type">
@@ -490,11 +494,6 @@
       <div class="subpage active" data-group="settings" id="settings-sub-general">
         <div class="cols">
           <div class="card">
-            <h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Creatine reminder</h3>
-            <div class="field"><label>Time</label><input type="time" id="settings-creatine-time"></div>
-            <button class="btn green" id="save-settings-btn">Save</button>
-          </div>
-          <div class="card">
             <h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Notifications</h3>
             <p id="notification-status">Notifications are off.</p>
             <div class="notify-grid">
@@ -503,9 +502,8 @@
               <label class="notify-toggle">Habits <input type="checkbox" id="notify-habits"></label>
               <label class="notify-toggle">Prayer <input type="checkbox" id="notify-prayer"></label>
               <label class="notify-toggle">Events <input type="checkbox" id="notify-events"></label>
-              <label class="notify-toggle">Creatine <input type="checkbox" id="notify-creatine"></label>
             </div>
-            <button class="btn secondary" id="enable-notifications-btn">Enable notifications</button>
+            <div class="grid2"><button class="btn secondary" id="enable-notifications-btn">Enable notifications</button><button class="btn green" id="save-settings-btn">Save</button></div>
           </div>
           <div class="card">
             <h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">App update</h3>
@@ -523,7 +521,7 @@
       <div class="subpage" data-group="settings" id="settings-sub-classes">
         <div class="row" style="margin-bottom:12px;"><p style="margin:0;">Your weekly lecture and lab schedule.</p>
           <button class="btn small" id="class-new-btn">+ Add class</button></div>
-        <div class="card" id="class-form" style="display:none;">
+        <div class="card" id="class-form" style="display:none;"><input type="hidden" id="class-edit-id">
           <div class="grid2">
             <div class="field"><label>Subject</label><input type="text" id="class-in-subject" list="subject-names" placeholder="e.g. Mathematics"><datalist id="subject-names"></datalist></div>
             <div class="field"><label>Room / Location</label><input type="text" id="class-in-room" placeholder="e.g. A503"></div>
@@ -637,13 +635,6 @@
   function escapeHTML(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
   function showToast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),3000); }
   function haptic(ms=12){ try{ if(navigator.vibrate) navigator.vibrate(ms); }catch(_){} }
-  function downloadCSV(filename, rows){
-    const csv = rows.map(r=>r.map(c=>'"'+String(c==null?'':c).replace(/"/g,'""')+'"').join(',')).join('\n');
-    const blob = new Blob([csv],{type:'text/csv'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
-    URL.revokeObjectURL(url);
-  }
 
   // ---------- prayer times ----------
   const LAT=30.0444, LNG=31.2357;
@@ -766,8 +757,7 @@
     habits:{title:'Habits Today', render:renderWidgetHabits},
     tasks:{title:'Tasks Due Soon', render:renderWidgetTasks},
     calendar:{title:'Upcoming', render:renderWidgetCalendar},
-    prayer:{title:'Prayer Times', render:renderWidgetPrayer},
-    creatine:{title:'Creatine', render:renderWidgetCreatine}
+    prayer:{title:'Prayer Times', render:renderWidgetPrayer}
   };
   function renderWidgetTrain(el){
     const day = todayDayCode(); const cat = state.config.plan[day]||'rest';
@@ -817,18 +807,20 @@
     el.innerHTML=upcoming.length?upcoming.map(t=>{
       const overdue=!!t.dueDate&&t.dueDate<today;
       const dateText=overdue?'OVERDUE · '+t.dueDate:(t.dueDate===today?'DUE TODAY':t.dueDate?'Due '+t.dueDate:'NO DUE DATE');
-      return '<div class="dash-task'+(overdue?' overdue':'')+'"><div class="dash-task-main"><div class="dash-task-title">'+escapeHTML(t.title)+'</div><div class="dash-task-date'+(overdue?' overdue-text':'')+'">'+dateText+'</div></div><span class="badge '+t.priority+'">'+t.priority+'</span></div>';
+      return '<div class="dash-task'+(overdue?' overdue':'')+'"><div class="dash-task-main"><div class="dash-task-title">'+escapeHTML(t.title)+'</div><div class="dash-task-date'+(overdue?' overdue-text':'')+'">'+dateText+'</div></div><span class="badge '+t.priority+'">'+t.priority+'</span><button class="btn green quick-done" data-done-task="'+t.id+'">Done</button></div>';
     }).join(''):'<div class="empty-state">All clear — nothing due soon.</div>';
+    el.querySelectorAll('[data-done-task]').forEach(b=>b.onclick=async()=>{const t=state.tasks.find(x=>x.id===b.dataset.doneTask);if(t){t.done=true;haptic();await save('tasks',state.tasks);renderDashboard();}});
   }
   function renderWidgetCalendar(el){
-    const upcoming = state.events.filter(e=>e.date && e.date>=todayKey()).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,5);
+    const upcoming = state.events.filter(e=>!e.done && e.date && e.date>=todayKey()).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,5);
     el.innerHTML = upcoming.length ? upcoming.map(e=>{
       const d=new Date(e.date+'T12:00:00');
       const day=d.toLocaleDateString('en-US',{day:'numeric'});
       const mon=d.toLocaleDateString('en-US',{month:'short'}).toUpperCase();
       const when=e.date===todayKey()?'TODAY':d.toLocaleDateString('en-US',{weekday:'short'}).toUpperCase();
-      return '<div class="dash-event"><div class="dash-datebox"><strong>'+day+'</strong><span>'+mon+'</span></div><div class="dash-event-main"><div class="dash-event-title">'+escapeHTML(e.title)+'</div><div class="dash-event-meta">'+when+(e.type?' · '+escapeHTML(e.type).toUpperCase():'')+'</div></div></div>';
-    }).join('') : '<p>Nothing scheduled.</p>';
+      return '<div class="dash-event"><div class="dash-datebox"><strong>'+day+'</strong><span>'+mon+'</span></div><div class="dash-event-main"><div class="dash-event-title">'+escapeHTML(e.title)+'</div><div class="dash-event-meta">'+when+(e.type?' · '+escapeHTML(e.type).toUpperCase():'')+'</div></div><button class="btn green quick-done" data-done-event="'+e.id+'">Done</button></div>';
+    }).join('') : '<div class="empty-state">Nothing upcoming — your calendar is clear.</div>';
+    el.querySelectorAll('[data-done-event]').forEach(b=>b.onclick=async()=>{const e=state.events.find(x=>x.id===b.dataset.doneEvent);if(e){e.done=true;haptic();await save('events',state.events);renderDashboard();}});
   }
   function renderWidgetPrayer(el){
     const {times,order,nextKey,nextDiff} = getNextPrayer();
@@ -836,24 +828,14 @@
     el.innerHTML = '<div class="prayer-list">' + order.map(([k,l])=>'<div class="prayer-item'+(k===nextKey?' next':'')+'"><div class="pname">'+l+'</div><div class="ptime">'+fmtTime(times[k])+'</div></div>').join('') + '</div>' +
       '<p style="text-align:center;margin-top:8px;color:var(--coral);font-weight:700;">Next: '+order.find(o=>o[0]===nextKey)[1]+' in '+h+'h '+m+'m</p>';
   }
-  function renderWidgetCreatine(el){
-    const taken = !!state.config.creatine[todayKey()];
-    el.innerHTML = '<div class="row"><p style="margin:0;">Reminder at '+(state.config.settings.creatineTime||'08:00')+'</p><button class="btn small '+(taken?'gray':'green')+'" id="dash-creatine-btn">'+(taken?'Taken':'Take it')+'</button></div>';
-    const btn = el.querySelector('#dash-creatine-btn');
-    btn.addEventListener('click', async ()=>{
-      if(state.config.creatine[todayKey()]) return;
-      state.config.creatine[todayKey()] = true; await save('config', state.config); renderDashboard();
-    });
-  }
   let dragId = null;
   function renderDashboard(){
     document.getElementById('dash-date-overview').textContent = new Date().toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'});
     renderStatbar();
     const grid = document.getElementById('widget-grid');
     grid.innerHTML = '';
-    const order = state.config.dashboardOrder;
-    const vis = state.config.dashboardVisibility;
-    order.filter(id=>vis[id]!==false).forEach(id=>{
+    const order = state.config.dashboardOrder.filter(id=>id!=='creatine');
+    order.forEach(id=>{
       const def = WIDGET_DEFS[id]; if(!def) return;
       const w = document.createElement('div');
       w.className = 'widget'; w.draggable = true; w.dataset.id = id;
@@ -872,13 +854,6 @@
       grid.appendChild(w);
       def.render(w.querySelector('.widget-body'));
     });
-    grid.querySelectorAll('[data-hide]').forEach(btn=>btn.addEventListener('click', async ()=>{
-      state.config.dashboardVisibility[btn.dataset.hide] = false;
-      await save('config', state.config); renderDashboard();
-    }));
-    const hiddenIds = order.filter(id=>vis[id]===false);
-    const hb = document.getElementById('hidden-widgets-bar');
-    hb.innerHTML = hiddenIds.length ? '<p>Hidden: ' + hiddenIds.map(id=>'<a href="#" data-show="'+id+'" style="margin-right:10px;">'+WIDGET_DEFS[id].title+'</a>').join('') + '</p>' : '';
     hb.querySelectorAll('[data-show]').forEach(a=>a.addEventListener('click', async e=>{
       e.preventDefault(); state.config.dashboardVisibility[a.dataset.show] = true;
       await save('config', state.config); renderDashboard();
@@ -974,21 +949,6 @@
   }
 
   // ---------- TASKS ----------
-  function renderProjects(){
-    const wrap = document.getElementById('project-list'); wrap.innerHTML = '';
-    const inbox = document.createElement('div');
-    inbox.className = 'proj-item'+(selectedProjectId==='inbox'?' active':'');
-    inbox.innerHTML = '<span class="proj-dot" style="background:#8A8D93;"></span>Inbox';
-    inbox.onclick = ()=>{ selectedProjectId='inbox'; renderProjects(); renderTaskList(); };
-    wrap.appendChild(inbox);
-    state.projects.forEach(p=>{
-      const el = document.createElement('div');
-      el.className = 'proj-item'+(selectedProjectId===p.id?' active':'');
-      el.innerHTML = '<span class="proj-dot" style="background:'+p.color+';"></span>'+escapeHTML(p.name);
-      el.onclick = ()=>{ selectedProjectId=p.id; renderProjects(); renderTaskList(); };
-      wrap.appendChild(el);
-    });
-  }
   function renderTaskList(){
     const wrap = document.getElementById('task-list');
     wrap.innerHTML = '';
@@ -1005,6 +965,9 @@
         '<span class="badge '+t.priority+'">'+t.priority+'</span>' + (t.dueDate?'<span class="'+(overdue?'overdue-text':'')+'">'+(overdue?'OVERDUE · ':'')+t.dueDate+'</span>':'') +
         ((t.subtasks&&t.subtasks.length)?'<span>'+subDone+'/'+t.subtasks.length+' subtasks</span>':'') + '</div>';
       row.appendChild(check); row.appendChild(body);
+      const edit = document.createElement('button'); edit.className='btn gray small'; edit.textContent='Edit';
+      edit.onclick=()=>{document.getElementById('task-edit-id').value=t.id;document.getElementById('task-in-title').value=t.title;document.getElementById('task-in-due').value=t.dueDate||'';document.getElementById('task-in-priority').value=t.priority||'med';document.getElementById('task-in-notes').value=t.notes||'';document.getElementById('task-form').style.display='block';};
+      row.appendChild(edit);
       const del = document.createElement('button'); del.className='btn gray small'; del.textContent='Delete';
       del.onclick = async ()=>{ state.tasks = state.tasks.filter(x=>x.id!==t.id); await save('tasks', state.tasks); renderTaskList(); renderStatbar(); };
       row.appendChild(del);
@@ -1042,9 +1005,10 @@
       const row = document.createElement('div'); row.className='heat-row';
       let streak=0; for(let i=days.length-1;i>=0;i--){ if((state.habitLogs[days[i]]||{})[h.id]) streak++; else break; }
       const cellsHTML = days.map(d=>'<div class="heat-cell'+(((state.habitLogs[d]||{})[h.id])?' on':'')+'" data-date="'+d+'" data-habit="'+h.id+'"></div>').join('');
-      row.innerHTML = '<div class="heat-name">'+escapeHTML(h.name)+(h.time?'<div style="font-size:10px;color:var(--muted);margin-top:2px;">'+h.time+'</div>':'')+'</div><div class="heat-cells">'+cellsHTML+'</div><div class="heat-streak">'+streak+'d streak</div><button class="btn gray small" data-del-habit="'+h.id+'" style="margin-left:8px;">Delete</button>';
+      row.innerHTML = '<div class="heat-name">'+escapeHTML(h.name)+(h.time?'<div style="font-size:10px;color:var(--muted);margin-top:2px;">'+h.time+'</div>':'')+'</div><div class="heat-cells">'+cellsHTML+'</div><div class="heat-streak">'+streak+'d streak</div><button class="btn gray small" data-edit-habit="'+h.id+'">Edit</button><button class="btn gray small" data-del-habit="'+h.id+'" style="margin-left:8px;">Delete</button>';
       wrap.appendChild(row);
     });
+    wrap.querySelectorAll('[data-edit-habit]').forEach(btn=>btn.addEventListener('click',()=>{const h=state.habits.find(x=>x.id===btn.dataset.editHabit);if(!h)return;document.getElementById('habit-edit-id').value=h.id;document.getElementById('habit-in-name').value=h.name;document.getElementById('habit-in-time').value=h.time||'';document.getElementById('habit-form').style.display='block';document.getElementById('habit-in-name').focus();}));
     wrap.querySelectorAll('[data-del-habit]').forEach(btn=>btn.addEventListener('click', async ()=>{
       if(!confirm('Delete this habit? Its history will be removed too.')) return;
       const hid = btn.dataset.delHabit;
@@ -1119,6 +1083,8 @@
     const body = document.createElement('div'); body.style.flex='1';
     body.innerHTML = '<span class="badge '+ev.type+'">'+ev.type+'</span> <span class="ttitle'+(ev.done?' done':'')+'" style="margin-left:6px;">'+escapeHTML(ev.title)+'</span>';
     row.appendChild(body);
+    const edit=document.createElement('button');edit.className='btn gray small';edit.textContent='Edit';edit.onclick=()=>{document.getElementById('event-edit-id').value=ev.id;document.getElementById('ev-title').value=ev.title;document.getElementById('ev-type').value=ev.type;document.getElementById('ev-date').value=ev.date||'';document.getElementById('ev-notes').value=ev.notes||'';document.getElementById('cal-form').style.display='block';};
+    row.appendChild(edit);
     return row;
   }
   function renderCalDayDetail(){
@@ -1225,7 +1191,9 @@
     row.innerHTML = '<div class="ctime">'+c.start+' \u2013 '+c.end+'</div>' +
       '<div style="flex:1;"><div class="csubject">'+escapeHTML(c.subject)+'</div><div class="croom">'+metaBits.join(' \u00b7 ')+'</div></div>' +
       '<span class="badge '+c.type+'">'+c.type+'</span>';
-    const del = document.createElement('button'); del.className='btn gray small'; del.textContent='Delete'; del.style.marginLeft='10px';
+    const edit=document.createElement('button');edit.className='btn gray small';edit.textContent='Edit';edit.onclick=()=>{document.getElementById('class-edit-id').value=c.id;document.getElementById('class-in-subject').value=c.subject;document.getElementById('class-in-room').value=c.room||'';document.getElementById('class-in-type').value=c.type;document.getElementById('class-in-start').value=c.start;document.getElementById('class-in-end').value=c.end;document.getElementById('class-in-notes').value=c.notes||'';document.querySelectorAll('#class-day-picker .exercise-chip').forEach(b=>b.classList.toggle('active',b.dataset.day===c.day));document.getElementById('class-form').style.display='block';};
+    row.appendChild(edit);
+    const del = document.createElement('button'); del.className='btn gray small'; del.textContent='Delete'; del.style.marginLeft='6px';
     del.onclick = async ()=>{ state.classSchedule = state.classSchedule.filter(x=>x.id!==c.id); await save('classSchedule', state.classSchedule); renderClassesPage(); };
     row.appendChild(del);
     wrap.appendChild(row);
@@ -1251,13 +1219,13 @@
     });
     if(!state.classSchedule.length) wrap.innerHTML = '<p>No classes added yet.</p>';
   }
-  document.getElementById('class-new-btn').addEventListener('click', ()=>{ document.getElementById('class-form').style.display='block'; });
+  document.getElementById('class-new-btn').addEventListener('click', ()=>{document.getElementById('class-edit-id').value='';document.getElementById('class-form').style.display='block';});
   document.getElementById('class-cancel-btn').addEventListener('click', ()=>{ document.getElementById('class-form').style.display='none'; });
   document.querySelectorAll('#class-day-picker .exercise-chip').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       if(btn.dataset.day==='daily'){
         const nowActive = !btn.classList.contains('active');
-        document.querySelectorAll('#class-day-picker .exercise-chip').forEach(b=>b.classList.remove('active'));
+        document.querySelectorAll('#class-day-picker .exercise-chip').forEach(b=>b.classList.remove('active')); document.getElementById('class-edit-id').value='';
         if(nowActive) btn.classList.add('active');
       } else {
         document.querySelector('#class-day-picker [data-day="daily"]').classList.remove('active');
@@ -1274,9 +1242,9 @@
     const room = document.getElementById('class-in-room').value.trim();
     const notes = document.getElementById('class-in-notes').value.trim();
     const type = document.getElementById('class-in-type').value;
-    selectedDays.forEach((day,i)=>{
-      state.classSchedule.push({id:'c-'+Date.now()+'-'+i, subject, room, notes, day, type, start, end});
-    });
+    const editId=document.getElementById('class-edit-id').value;
+    if(editId){const existing=state.classSchedule.find(x=>x.id===editId);if(existing)Object.assign(existing,{subject,room,notes,day:selectedDays[0],type,start,end});}
+    else selectedDays.forEach((day,i)=>{state.classSchedule.push({id:'c-'+Date.now()+'-'+i,subject,room,notes,day,type,start,end});});
     await save('classSchedule', state.classSchedule);
     if(!state.subjects.find(s=>s.name.toLowerCase()===subject.toLowerCase())){
       state.subjects.push({id:'subj-'+Date.now(), name:subject});
@@ -1340,16 +1308,16 @@
 
   document.getElementById('progress-select').addEventListener('change', renderProgressChart);
 
-  document.getElementById('task-new-btn').addEventListener('click', ()=>{ document.getElementById('task-form').style.display='block'; });
+  document.getElementById('task-new-btn').addEventListener('click', ()=>{document.getElementById('task-edit-id').value='';document.getElementById('task-form').style.display='block';});
   document.getElementById('task-cancel-btn').addEventListener('click', ()=>{ document.getElementById('task-form').style.display='none'; });
   document.getElementById('task-save-btn').addEventListener('click', async ()=>{
     const title = document.getElementById('task-in-title').value.trim();
     if(!title){ showToast('Give it a title.'); return; }
-    state.tasks.push({id:'t-'+Date.now(), title,
-      dueDate: document.getElementById('task-in-due').value||null, priority: document.getElementById('task-in-priority').value,
-      notes: document.getElementById('task-in-notes').value.trim(), done:false, subtasks:[]});
+    const editId=document.getElementById('task-edit-id').value;
+    const vals={title,dueDate:document.getElementById('task-in-due').value||null,priority:document.getElementById('task-in-priority').value,notes:document.getElementById('task-in-notes').value.trim()};
+    if(editId){const t=state.tasks.find(x=>x.id===editId);if(t)Object.assign(t,vals);}else state.tasks.push({id:'t-'+Date.now(),...vals,done:false,subtasks:[]});
     await save('tasks', state.tasks);
-    document.getElementById('task-in-title').value=''; document.getElementById('task-in-due').value=''; document.getElementById('task-in-notes').value='';
+    document.getElementById('task-in-title').value=''; document.getElementById('task-in-due').value=''; document.getElementById('task-in-notes').value=''; document.getElementById('task-edit-id').value='';
     document.getElementById('task-form').style.display='none';
     renderTaskList(); renderStatbar(); showToast('Task added.');
   });
@@ -1366,15 +1334,16 @@
     location.reload();
   });
 
-  document.getElementById('habit-new-btn').addEventListener('click', ()=>{ document.getElementById('habit-form').style.display='block'; });
+  document.getElementById('habit-new-btn').addEventListener('click', ()=>{document.getElementById('habit-edit-id').value='';document.getElementById('habit-form').style.display='block';});
   document.getElementById('habit-cancel-btn').addEventListener('click', ()=>{ document.getElementById('habit-form').style.display='none'; });
   document.getElementById('habit-save-btn').addEventListener('click', async ()=>{
     const name = document.getElementById('habit-in-name').value.trim();
     if(!name){ showToast('Name the habit.'); return; }
     const time = document.getElementById('habit-in-time').value||null;
-    state.habits.push({id:'h-'+Date.now(), name, time, preset:false});
+    const editId=document.getElementById('habit-edit-id').value;
+    if(editId){const h=state.habits.find(x=>x.id===editId);if(h){h.name=name;h.time=time;}}else state.habits.push({id:'h-'+Date.now(), name, time, preset:false});
     await save('habits', state.habits);
-    document.getElementById('habit-in-name').value=''; document.getElementById('habit-in-time').value=''; document.getElementById('habit-form').style.display='none';
+    document.getElementById('habit-in-name').value=''; document.getElementById('habit-in-time').value=''; document.getElementById('habit-edit-id').value=''; document.getElementById('habit-form').style.display='none';
     renderHabitGrid(); showToast('Habit added.');
   });
 
@@ -1404,20 +1373,20 @@
   document.getElementById('cal-prev').addEventListener('click', ()=>{ calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); });
   document.getElementById('cal-next').addEventListener('click', ()=>{ calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendar(); });
   document.getElementById('cal-add-btn').addEventListener('click', ()=>{ document.getElementById('cal-form').style.display='block'; document.getElementById('ev-date').value=calSelectedDate||''; document.getElementById('ev-title').focus(); });
-  document.getElementById('ev-cancel').addEventListener('click', ()=>{ document.getElementById('cal-form').style.display='none'; document.getElementById('ev-title').value=''; document.getElementById('ev-notes').value=''; });
+  document.getElementById('ev-cancel').addEventListener('click', ()=>{ document.getElementById('cal-form').style.display='none'; document.getElementById('ev-title').value=''; document.getElementById('ev-notes').value=''; document.getElementById('event-edit-id').value=''; });
   document.getElementById('ev-save').addEventListener('click', async ()=>{
     const title = document.getElementById('ev-title').value.trim();
     if(!title){ showToast('Give it a title.'); return; }
-    state.events.push({id:'ev-'+Date.now(), title, type:document.getElementById('ev-type').value, date:document.getElementById('ev-date').value||null, notes:document.getElementById('ev-notes').value.trim(), done:false});
+    const editId=document.getElementById('event-edit-id').value, vals={title,type:document.getElementById('ev-type').value,date:document.getElementById('ev-date').value||null,notes:document.getElementById('ev-notes').value.trim()};
+    if(editId){const ev=state.events.find(x=>x.id===editId);if(ev)Object.assign(ev,vals);}else state.events.push({id:'ev-'+Date.now(),...vals,done:false});
     await save('events', state.events);
     document.getElementById('cal-form').style.display='none'; document.getElementById('ev-title').value=''; document.getElementById('ev-notes').value='';
     renderAllCalendarBits(); showToast('Added.');
   });
 
   document.getElementById('save-settings-btn').addEventListener('click', async ()=>{
-    state.config.settings.creatineTime = document.getElementById('settings-creatine-time').value||'08:00';
     state.config.settings.notifications={};
-    ['classes','tasks','habits','prayer','events','creatine'].forEach(k=>state.config.settings.notifications[k]=document.getElementById('notify-'+k).checked);
+    ['classes','tasks','habits','prayer','events'].forEach(k=>state.config.settings.notifications[k]=document.getElementById('notify-'+k).checked);
     await save('config', state.config);
     try{
       if(Notification.permission==='granted'){
@@ -1441,9 +1410,8 @@
   async function init(){
     await loadAll();
     const now = new Date(); calYear=now.getFullYear(); calMonth=now.getMonth();
-    document.getElementById('settings-creatine-time').value = state.config.settings.creatineTime||'08:00';
     const ns=state.config.settings.notifications;
-    ['classes','tasks','habits','prayer','events','creatine'].forEach(k=>{const el=document.getElementById('notify-'+k);if(el)el.checked=ns[k]!==false;});
+    ['classes','tasks','habits','prayer','events'].forEach(k=>{const el=document.getElementById('notify-'+k);if(el)el.checked=ns[k]!==false;});
     renderTabbar();
     wireSubtabs();
     document.getElementById('loading').style.display='none';
