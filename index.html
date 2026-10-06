@@ -300,6 +300,10 @@
   .nexa-confirm h3{font-size:18px;margin:0 0 6px}.nexa-confirm p{margin:0 0 16px;line-height:1.4}.nexa-confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.nexa-confirm-actions .btn{width:100%;margin:0!important}
   @keyframes sheetin{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
   @media(max-width:520px){.grid4{grid-template-columns:1fr 1fr}.card table{display:block;max-width:100%;overflow-x:auto}.row{min-width:0}.row>h3,.row>p{min-width:0}.row select{max-width:52vw}.task-row{gap:9px}.task-row .btn.small{flex-shrink:0}.notify-row{grid-template-columns:minmax(0,1fr) minmax(118px,145px)}#settings-sub-general .card,#health-sub-training .card,#health-sub-nutrition .card,#health-sub-habits .card,#page-tasks .card,#page-calendar .card{min-width:0;max-width:100%;overflow:hidden}}
+  /* Keep bottom navigation fixed and non-draggable while content scrolls independently. */
+  .tabbar{position:relative!important;flex:0 0 auto!important;overflow:hidden!important;overscroll-behavior:none;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+  .tabbar,.tabbar *{-webkit-user-drag:none;}
+  .main{overscroll-behavior-y:contain;}
 </style>
   <!-- deploy-refresh-20261004 -->
 </head>
@@ -738,6 +742,11 @@
       });
     });
   }
+  const tabbarLock=document.getElementById('tabbar');
+  tabbarLock.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+  tabbarLock.addEventListener('dragstart',e=>e.preventDefault());
+  tabbarLock.addEventListener('contextmenu',e=>e.preventDefault());
+
   function gotoPage(id){
     document.querySelectorAll('.tabitem').forEach(n=>n.classList.toggle('active', n.dataset.tab===id));
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
