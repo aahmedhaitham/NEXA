@@ -1519,9 +1519,11 @@
         applicationServerKey:urlBase64ToUint8Array(cfg.publicKey)
       });
     }
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session?.access_token) throw new Error('Sign in before enabling notifications');
     const response=await fetch(cfg.subscribeUrl,{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
       body:JSON.stringify({
         subscription:subscription.toJSON(),
         timezone:Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
@@ -1531,8 +1533,8 @@
           habits:JSON.parse(localStorage.getItem('cb_habits')||'[]'),
           habitLogs:JSON.parse(localStorage.getItem('cb_habitLogs')||'{}'),
           classes:JSON.parse(localStorage.getItem('cb_classSchedule')||'[]'),
-          notificationSettings:(JSON.parse(localStorage.getItem('cb_config')||'{}').settings||{}).notifications||{classes:true,tasks:true,habits:true,prayer:true,events:true},
-          notificationLead:(JSON.parse(localStorage.getItem('cb_config')||'{}').settings||{}).notificationLead||{classes:15,tasks:0,habits:0,prayer:0,events:0}
+          notificationSettings:(JSON.parse(localStorage.getItem('cb_config')||'{}').settings||{}).notifications||{classes:true,habits:true,prayer:true,events:true},
+          notificationLead:(JSON.parse(localStorage.getItem('cb_config')||'{}').settings||{}).notificationLead||{classes:15,habits:0,prayer:0,events:0}
         }
       })
     });
