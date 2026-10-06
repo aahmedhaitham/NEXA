@@ -782,10 +782,10 @@
   }
   function renderWidgetHabits(el){
     const log = state.habitLogs[todayKey()] || {};
-    el.innerHTML = state.habits.length ? state.habits.map(h=>{
+    el.innerHTML = state.habits.length ? '<div class="dash-habits">'+state.habits.map(h=>{
       const done = !!log[h.id];
-      return '<div class="row" style="padding:5px 0;"><span style="font-size:13px;">'+escapeHTML(h.name)+'</span><button class="checkbtn'+(done?' checked':'')+'" data-habit="'+h.id+'">'+(done?'\u2713':'')+'</button></div>';
-    }).join('') : '<p>No habits yet.</p>';
+      return '<button type="button" class="dash-habit'+(done?' done':'')+'" data-habit="'+h.id+'"><span>'+escapeHTML(h.name)+'</span><span class="dash-habit-mark">'+(done?'✓':'')+'</span></button>';
+    }).join('')+'</div>' : '<p>No habits yet.</p>';
     el.querySelectorAll('[data-habit]').forEach(btn=>btn.addEventListener('click', async ()=>{
       const key=todayKey(); if(!state.habitLogs[key]) state.habitLogs[key]={};
       state.habitLogs[key][btn.dataset.habit] = !state.habitLogs[key][btn.dataset.habit];
