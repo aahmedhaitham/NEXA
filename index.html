@@ -1475,13 +1475,7 @@
 
   // ---------- init ----------
   async function init(){
-    try{
-      await loadAll();
-      await setupCloudAuth();
-    }catch(e){
-      console.error('Nexa startup recovery',e);
-      document.getElementById('auth-modal')?.classList.add('show');
-    }
+    try{ await loadAll(); }catch(e){ console.error('Nexa data load recovery',e); }
     const now = new Date(); calYear=now.getFullYear(); calMonth=now.getMonth();
     const ns=state.config.settings.notifications;
     ['classes','tasks','habits','prayer','events'].forEach(k=>{const el=document.getElementById('notify-'+k);if(el)el.checked=ns[k]!==false;const lead=document.getElementById('notify-'+k+'-lead');if(lead)lead.value=String((state.config.settings.notificationLead||{})[k]||0);});
@@ -1491,6 +1485,7 @@
     document.getElementById('shell').style.display='flex';
     renderDashboard();
     setInterval(()=>{ if(document.getElementById('page-today').classList.contains('active')) renderDashboard(); }, 60000);
+    setupCloudAuth().catch(e=>{console.error('Cloud auth unavailable',e);setCloudUI('Cloud unavailable');});
   }
   document.getElementById('auth-signin').onclick=async()=>{
     const email=document.getElementById('auth-email').value.trim(),password=document.getElementById('auth-password').value,msg=document.getElementById('auth-message');
