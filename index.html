@@ -126,9 +126,6 @@
   .widget.dragging{opacity:0.4;}
   .widget-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
   .widget-head h3{font-size:12px;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);font-weight:700;}
-  .widget-hide{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 6px;}
-  .widget-hide:hover{color:var(--coral);}
-  .hidden-widgets-bar{margin-top:14px;}
 
   .card{background:var(--panel);backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);
     border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.25), 0 8px 20px rgba(0,0,0,0.25);}
@@ -187,7 +184,12 @@
   .dash-task.overdue,.task-row.overdue{border-color:rgba(255,90,43,.45);background:rgba(255,90,43,.07)} .overdue-text{color:var(--coral)!important;font-weight:800}
   .class-live{color:var(--green);border-color:rgba(51,214,122,.35);background:rgba(51,214,122,.08)} .class-soon{color:var(--gold);border-color:rgba(255,194,75,.35);background:rgba(255,194,75,.08)}
   .empty-state{text-align:center;padding:18px 10px;border:1px dashed rgba(255,255,255,.13);border-radius:14px;color:var(--muted);font-size:12.5px;background:rgba(255,255,255,.025)}
-  .notify-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.notify-toggle{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface2);border:1px solid var(--hairline);border-radius:12px;padding:10px 11px;font-size:12px;font-weight:700}.notify-toggle input{accent-color:var(--coral);width:18px;height:18px}
+  .notify-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+  .notify-list{display:flex;flex-direction:column;gap:8px;margin:12px 0}.notify-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,160px);gap:8px;align-items:center}.notify-row .notify-toggle{margin:0;min-width:0}.notify-row select{min-width:0}
+  .item-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;flex-shrink:0}
+  .class-row{flex-wrap:wrap}.class-row .item-actions{margin-left:auto}.class-row .badge{flex-shrink:0}
+  html,body,.app-shell,.main,.page,.card,.widget{max-width:100%}.main,.page{min-width:0}
+  @media(max-width:520px){.notify-row{grid-template-columns:1fr 145px}.class-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px 10px}.class-row .ctime{width:auto}.class-row .item-actions{grid-column:1/-1;width:100%;display:grid;grid-template-columns:1fr 1fr}.class-row .item-actions .btn{width:100%;margin:0!important}.heat-row{grid-template-columns:minmax(0,1fr) auto}.heat-row .item-actions{grid-column:1/-1;grid-row:3;width:100%;display:grid;grid-template-columns:1fr 1fr}.heat-row .item-actions .btn{width:100%;margin:0!important}}.notify-toggle{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface2);border:1px solid var(--hairline);border-radius:12px;padding:10px 11px;font-size:12px;font-weight:700}.notify-toggle input{accent-color:var(--coral);width:18px;height:18px}
   .task-row{transition:transform .16s ease,opacity .16s ease}.task-row.swiping{transition:none}
 
   .class-row .ctime{font-size:12.5px;font-weight:700;color:var(--muted);width:110px;flex-shrink:0;}
@@ -308,7 +310,6 @@
       <div class="page-head"><div><h1>Today</h1><p id="dash-date-overview"></p></div></div>
       <div class="statbar" id="statbar"></div>
       <div class="widget-grid" id="widget-grid"></div>
-      <div class="hidden-widgets-bar" id="hidden-widgets-bar"></div>
     </section>
 
     <!-- TASKS (Tasks | Subjects) -->
@@ -496,12 +497,12 @@
           <div class="card">
             <h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Notifications</h3>
             <p id="notification-status">Notifications are off.</p>
-            <div class="notify-grid">
-              <label class="notify-toggle">Classes <input type="checkbox" id="notify-classes"></label>
-              <label class="notify-toggle">Tasks <input type="checkbox" id="notify-tasks"></label>
-              <label class="notify-toggle">Habits <input type="checkbox" id="notify-habits"></label>
-              <label class="notify-toggle">Prayer <input type="checkbox" id="notify-prayer"></label>
-              <label class="notify-toggle">Events <input type="checkbox" id="notify-events"></label>
+            <div class="notify-list">
+              <div class="notify-row"><label class="notify-toggle">Classes <input type="checkbox" id="notify-classes"></label><select id="notify-classes-lead"><option value="0">At time</option><option value="5">5 min before</option><option value="10">10 min before</option><option value="15">15 min before</option><option value="30">30 min before</option></select></div>
+              <div class="notify-row"><label class="notify-toggle">Tasks <input type="checkbox" id="notify-tasks"></label><select id="notify-tasks-lead"><option value="0">At 9:00 AM</option><option value="30">8:30 AM</option><option value="60">8:00 AM</option></select></div>
+              <div class="notify-row"><label class="notify-toggle">Habits <input type="checkbox" id="notify-habits"></label><select id="notify-habits-lead"><option value="0">At habit time</option><option value="5">5 min before</option><option value="10">10 min before</option><option value="15">15 min before</option></select></div>
+              <div class="notify-row"><label class="notify-toggle">Prayer <input type="checkbox" id="notify-prayer"></label><select id="notify-prayer-lead"><option value="0">At prayer time</option><option value="5">5 min before</option><option value="10">10 min before</option><option value="15">15 min before</option></select></div>
+              <div class="notify-row"><label class="notify-toggle">Events <input type="checkbox" id="notify-events"></label><select id="notify-events-lead"><option value="0">At 9:00 AM</option><option value="30">8:30 AM</option><option value="60">8:00 AM</option></select></div>
             </div>
             <div class="grid2"><button class="btn secondary" id="enable-notifications-btn">Enable notifications</button><button class="btn green" id="save-settings-btn">Save</button></div>
           </div>
@@ -605,8 +606,8 @@
   const TYPE_ICON = {workout:'dumbbell',course:'book',movie:'clapper',plan:'checklist',custom:'star'};
   function icon(name,size){ return (ICONS[name]||'').split('{{S}}').join(size||18); }
 
-  let state = {exercises:[],logs:[],events:[],config:{},nutrition:{},projects:[],tasks:[],habits:[],habitLogs:{},health:{steps:{},sleep:{},weight:[]},classSchedule:[],courses:[],subjects:[],subjectItems:[]};
-  let calYear, calMonth, calSelectedDate=null, selectedProjectId='inbox';
+  let state = {exercises:[],logs:[],events:[],config:{},nutrition:{},tasks:[],habits:[],habitLogs:{},health:{steps:{},sleep:{},weight:[]},classSchedule:[],courses:[],subjects:[],subjectItems:[]};
+  let calYear, calMonth, calSelectedDate=null;
 
   async function safeGet(key, fallback){ try{ const v=localStorage.getItem('cb_'+key); return v?JSON.parse(v):fallback; }catch(e){ return fallback; } }
   async function save(key, value){ try{ localStorage.setItem('cb_'+key, JSON.stringify(value)); if('Notification' in window && Notification.permission==='granted' && ['tasks','events','habits','habitLogs','classSchedule','config'].includes(key)){ navigator.serviceWorker.ready.then(r=>syncNexaPushSubscription(r)).catch(()=>{}); } }catch(e){ console.error(e); } }
@@ -614,15 +615,15 @@
     state.exercises = await safeGet('exercises', DEFAULT_EXERCISES);
     state.logs = await safeGet('logs', []);
     state.events = await safeGet('events', []);
-    state.config = await safeGet('config', {plan:DEFAULT_PLAN, settings:{creatineTime:'08:00',notifications:{classes:true,tasks:true,habits:true,prayer:true,events:true,creatine:true}}, creatine:{}, dashboardOrder:['classes','train','nutrition','habits','tasks','calendar','prayer','creatine'], dashboardVisibility:{}});
+    state.config = await safeGet('config', {plan:DEFAULT_PLAN, settings:{notifications:{classes:true,tasks:true,habits:true,prayer:true,events:true},notificationLead:{classes:15,tasks:0,habits:0,prayer:0,events:0}}, dashboardOrder:['classes','train','nutrition','habits','tasks','calendar','prayer']});
     if(!state.config.plan) state.config.plan = DEFAULT_PLAN;
-    if(!state.config.settings) state.config.settings = {creatineTime:'08:00'};
-    if(!state.config.settings.notifications) state.config.settings.notifications = {classes:true,tasks:true,habits:true,prayer:true,events:true,creatine:true};
-    if(!state.config.creatine) state.config.creatine = {};
-    if(!state.config.dashboardOrder) state.config.dashboardOrder = ['classes','train','nutrition','habits','tasks','calendar','prayer','creatine'];
-    if(!state.config.dashboardVisibility) state.config.dashboardVisibility = {};
+    if(!state.config.settings) state.config.settings = {};
+    if(!state.config.settings.notifications) state.config.settings.notifications = {classes:true,tasks:true,habits:true,prayer:true,events:true};
+    delete state.config.settings.notifications.creatine; delete state.config.settings.creatineTime; delete state.config.creatine; delete state.config.dashboardVisibility;
+    if(!state.config.settings.notificationLead) state.config.settings.notificationLead={classes:15,tasks:0,habits:0,prayer:0,events:0};
+    if(!state.config.dashboardOrder) state.config.dashboardOrder = ['classes','train','nutrition','habits','tasks','calendar','prayer'];
+    state.config.dashboardOrder=state.config.dashboardOrder.filter(id=>id!=='creatine');
     state.nutrition = await safeGet('nutrition', {});
-    state.projects = await safeGet('projects', []);
     state.tasks = await safeGet('tasks', []);
     state.habits = await safeGet('habits', DEFAULT_HABITS);
     state.habitLogs = await safeGet('habitLogs', {});
@@ -1005,7 +1006,7 @@
       const row = document.createElement('div'); row.className='heat-row';
       let streak=0; for(let i=days.length-1;i>=0;i--){ if((state.habitLogs[days[i]]||{})[h.id]) streak++; else break; }
       const cellsHTML = days.map(d=>'<div class="heat-cell'+(((state.habitLogs[d]||{})[h.id])?' on':'')+'" data-date="'+d+'" data-habit="'+h.id+'"></div>').join('');
-      row.innerHTML = '<div class="heat-name">'+escapeHTML(h.name)+(h.time?'<div style="font-size:10px;color:var(--muted);margin-top:2px;">'+h.time+'</div>':'')+'</div><div class="heat-cells">'+cellsHTML+'</div><div class="heat-streak">'+streak+'d streak</div><button class="btn gray small" data-edit-habit="'+h.id+'">Edit</button><button class="btn gray small" data-del-habit="'+h.id+'" style="margin-left:8px;">Delete</button>';
+      row.innerHTML = '<div class="heat-name">'+escapeHTML(h.name)+(h.time?'<div style="font-size:10px;color:var(--muted);margin-top:2px;">'+h.time+'</div>':'')+'</div><div class="heat-cells">'+cellsHTML+'</div><div class="heat-streak">'+streak+'d streak</div><div class="item-actions"><button class="btn gray small" data-edit-habit="'+h.id+'">Edit</button><button class="btn gray small" data-del-habit="'+h.id+'">Delete</button></div>';
       wrap.appendChild(row);
     });
     wrap.querySelectorAll('[data-edit-habit]').forEach(btn=>btn.addEventListener('click',()=>{const h=state.habits.find(x=>x.id===btn.dataset.editHabit);if(!h)return;document.getElementById('habit-edit-id').value=h.id;document.getElementById('habit-in-name').value=h.name;document.getElementById('habit-in-time').value=h.time||'';document.getElementById('habit-form').style.display='block';document.getElementById('habit-in-name').focus();}));
@@ -1192,10 +1193,10 @@
       '<div style="flex:1;"><div class="csubject">'+escapeHTML(c.subject)+'</div><div class="croom">'+metaBits.join(' \u00b7 ')+'</div></div>' +
       '<span class="badge '+c.type+'">'+c.type+'</span>';
     const edit=document.createElement('button');edit.className='btn gray small';edit.textContent='Edit';edit.onclick=()=>{document.getElementById('class-edit-id').value=c.id;document.getElementById('class-in-subject').value=c.subject;document.getElementById('class-in-room').value=c.room||'';document.getElementById('class-in-type').value=c.type;document.getElementById('class-in-start').value=c.start;document.getElementById('class-in-end').value=c.end;document.getElementById('class-in-notes').value=c.notes||'';document.querySelectorAll('#class-day-picker .exercise-chip').forEach(b=>b.classList.toggle('active',b.dataset.day===c.day));document.getElementById('class-form').style.display='block';};
-    row.appendChild(edit);
-    const del = document.createElement('button'); del.className='btn gray small'; del.textContent='Delete'; del.style.marginLeft='6px';
+    const actions=document.createElement('div');actions.className='item-actions';actions.appendChild(edit);
+    const del = document.createElement('button'); del.className='btn gray small'; del.textContent='Delete';
     del.onclick = async ()=>{ state.classSchedule = state.classSchedule.filter(x=>x.id!==c.id); await save('classSchedule', state.classSchedule); renderClassesPage(); };
-    row.appendChild(del);
+    actions.appendChild(del);row.appendChild(actions);
     wrap.appendChild(row);
   }
   function renderClassesPage(){
@@ -1386,7 +1387,8 @@
 
   document.getElementById('save-settings-btn').addEventListener('click', async ()=>{
     state.config.settings.notifications={};
-    ['classes','tasks','habits','prayer','events'].forEach(k=>state.config.settings.notifications[k]=document.getElementById('notify-'+k).checked);
+    state.config.settings.notificationLead={};
+    ['classes','tasks','habits','prayer','events'].forEach(k=>{state.config.settings.notifications[k]=document.getElementById('notify-'+k).checked;state.config.settings.notificationLead[k]=parseInt(document.getElementById('notify-'+k+'-lead').value,10)||0;});
     await save('config', state.config);
     try{
       if(Notification.permission==='granted'){
@@ -1399,10 +1401,10 @@
   document.getElementById('reset-btn').addEventListener('click', async ()=>{
     if(!confirm('This deletes everything. Continue?')) return;
     localStorage.clear();
-    state = {exercises:JSON.parse(JSON.stringify(DEFAULT_EXERCISES)), logs:[], events:[], nutrition:{}, projects:[], tasks:[], habits:JSON.parse(JSON.stringify(DEFAULT_HABITS)), habitLogs:{},
+    state = {exercises:JSON.parse(JSON.stringify(DEFAULT_EXERCISES)), logs:[], events:[], nutrition:{}, tasks:[], habits:JSON.parse(JSON.stringify(DEFAULT_HABITS)), habitLogs:{},
       classSchedule:[], subjects:[], subjectItems:[], health:{steps:{},sleep:{},weight:[]},
-      config:{plan:Object.assign({},DEFAULT_PLAN), settings:{creatineTime:'08:00'}, creatine:{}, dashboardOrder:['classes','train','nutrition','habits','tasks','calendar','prayer','creatine'], dashboardVisibility:{}}};
-    for(const k of ['exercises','logs','events','nutrition','projects','tasks','habits','habitLogs','classSchedule','subjects','subjectItems','health','config']) await save(k, state[k]);
+      config:{plan:Object.assign({},DEFAULT_PLAN), settings:{notifications:{classes:true,tasks:true,habits:true,prayer:true,events:true},notificationLead:{classes:15,tasks:0,habits:0,prayer:0,events:0}}, dashboardOrder:['classes','train','nutrition','habits','tasks','calendar','prayer']}};
+    for(const k of ['exercises','logs','events','nutrition','tasks','habits','habitLogs','classSchedule','subjects','subjectItems','health','config']) await save(k, state[k]);
     showToast('All data reset.'); gotoPage('today');
   });
 
@@ -1411,7 +1413,7 @@
     await loadAll();
     const now = new Date(); calYear=now.getFullYear(); calMonth=now.getMonth();
     const ns=state.config.settings.notifications;
-    ['classes','tasks','habits','prayer','events'].forEach(k=>{const el=document.getElementById('notify-'+k);if(el)el.checked=ns[k]!==false;});
+    ['classes','tasks','habits','prayer','events'].forEach(k=>{const el=document.getElementById('notify-'+k);if(el)el.checked=ns[k]!==false;const lead=document.getElementById('notify-'+k+'-lead');if(lead)lead.value=String((state.config.settings.notificationLead||{})[k]||0);});
     renderTabbar();
     wireSubtabs();
     document.getElementById('loading').style.display='none';
@@ -1439,21 +1441,20 @@
         applicationServerKey:urlBase64ToUint8Array(cfg.publicKey)
       });
     }
-    const creatineTime=(window.state?.config?.settings?.creatineTime) || document.getElementById('settings-creatine-time')?.value || '08:00';
     const response=await fetch(cfg.subscribeUrl,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         subscription:subscription.toJSON(),
         timezone:Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-        creatineTime,
         reminderData:{
           tasks:JSON.parse(localStorage.getItem('cb_tasks')||'[]'),
           events:JSON.parse(localStorage.getItem('cb_events')||'[]'),
           habits:JSON.parse(localStorage.getItem('cb_habits')||'[]'),
           habitLogs:JSON.parse(localStorage.getItem('cb_habitLogs')||'{}'),
           classes:JSON.parse(localStorage.getItem('cb_classSchedule')||'[]'),
-          notificationSettings:(JSON.parse(localStorage.getItem('cb_config')||'{}').settings||{}).notifications||{classes:true,tasks:true,habits:true,prayer:true,events:true,creatine:true}
+          notificationSettings:(JSON.parse(localStorage.getItem('cb_config')||'{}').settings||{}).notifications||{classes:true,tasks:true,habits:true,prayer:true,events:true},
+          notificationLead:(JSON.parse(localStorage.getItem('cb_config')||'{}').settings||{}).notificationLead||{classes:15,tasks:0,habits:0,prayer:0,events:0}
         }
       })
     });
