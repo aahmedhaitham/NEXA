@@ -1,6 +1,10 @@
-# Nexa
+<div align="center">
+  <img src="./logo.png" alt="Nexa logo" width="150">
 
-A mobile-first, local-first productivity and wellness Progressive Web App with a serverless reminder backend.
+  # Nexa
+
+  **A mobile-first, local-first productivity and wellness Progressive Web App.**
+</div>
 
 Nexa combines daily planning, university classes, calendar events, training, nutrition, habits, prayer times and configurable reminders in one installable interface. It is designed primarily for iPhone while remaining responsive on desktop browsers.
 
