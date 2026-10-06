@@ -13,7 +13,6 @@
 <link rel="icon" type="image/png" href="./icon-192.png?v=3">
 <link rel="manifest" href="manifest.webmanifest">
 <script src="./push-config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="window.NEXA_SUPABASE_LOAD_FAILED=true"></script>
 <title>Nexa</title>
 <style>
   :root{
@@ -305,11 +304,6 @@
   .tabbar{position:relative!important;flex:0 0 auto!important;overflow:hidden!important;overscroll-behavior:none;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
   .tabbar,.tabbar *{-webkit-user-drag:none;}
   .main{overscroll-behavior-y:contain;}
-  .cloud-status{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0 12px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.055);border:1px solid var(--hairline);}
-  .cloud-dot{width:8px;height:8px;border-radius:50%;background:var(--gray);display:inline-block;margin-right:7px}.cloud-dot.on{background:var(--green)}
-  #auth-modal{position:fixed;inset:0;z-index:9998;background:#0B0C10;display:none;align-items:center;justify-content:center;padding:24px}
-  #auth-modal.show{display:flex}.auth-card{width:min(100%,420px);background:var(--surface);border:1px solid var(--hairline);border-radius:22px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.45)}
-  .auth-brand{font-size:28px;font-weight:850;margin-bottom:6px}.auth-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.auth-note{font-size:12px;color:var(--muted);margin-top:10px}
 </style>
   <!-- deploy-refresh-20261004 -->
 </head>
@@ -325,7 +319,6 @@
   </defs>
 </svg>
 
-<div id="auth-modal"><div class="auth-card"><div class="auth-brand">Nexa</div><p>Sign in to keep your Nexa data securely synced across devices.</p><div class="field"><label>Email</label><input id="auth-email" type="email" autocomplete="email" placeholder="you@example.com"></div><div class="field"><label>Password</label><input id="auth-password" type="password" autocomplete="current-password" placeholder="8+ characters"></div><div class="auth-actions"><button class="btn secondary" id="auth-signin">Log in</button><button class="btn green" id="auth-signup">Sign up</button></div><p class="auth-note" id="auth-message">You can create an account or log in.</p></div></div>
 <div id="loading"><span class="sparkle-wrap"><svg class="spark-icon" width="22" height="22" viewBox="0 0 24 24"><path d="M12 2c.6 3.8 1.2 6 2.4 7.6C15.8 11.2 18 11.8 22 12c-4 .2-6.2.8-7.6 2.4C13.2 16 12.6 18.2 12 22c-.6-3.8-1.2-6-2.4-7.6C8.2 12.8 6 12.2 2 12c4-.2 6.2-.8 7.6-2.4C10.8 8 11.4 5.8 12 2z"/></svg><span class="sparkle-text">Nexa</span></span></div>
 <div class="app-shell" id="shell" style="display:none;">
   <div class="main" id="main-scroll">
@@ -624,48 +617,9 @@
 
   let state = {exercises:[],logs:[],events:[],config:{},nutrition:{},tasks:[],habits:[],habitLogs:{},health:{steps:{},sleep:{},weight:[]},classSchedule:[],courses:[],subjects:[],subjectItems:[]};
   let calYear, calMonth, calSelectedDate=null;
-  let cloudUser=null, cloudSyncTimer=null, cloudHydrating=false;
-  const CLOUD_KEYS=['exercises','logs','events','nutrition','tasks','habits','habitLogs','classSchedule','subjects','subjectItems','health','config'];
-  const sb=(window.supabase&&window.supabase.createClient)?window.supabase.createClient('https://kpsnghviozowwjpqqity.supabase.co','sb_publishable_AoOlOroOz8Tw_buvKn-tBw_5FbZQOZD'):null;
-  function cloudPayload(){const out={};CLOUD_KEYS.forEach(k=>out[k]=state[k]);return out;}
-  function setCloudUI(msg){
-    const status=document.getElementById('cloud-status'), user=document.getElementById('cloud-user'), dot=document.getElementById('cloud-dot');
-    if(status) status.textContent=msg||(cloudUser?'Cloud connected':'Not signed in');
-    if(user) user.textContent=cloudUser?.email||'';
-    if(dot) dot.classList.toggle('on',!!cloudUser);
-  }
-  async function pushCloud(){
-    if(!sb||!cloudUser||cloudHydrating)return;
-    const {error}=await sb.from('nexa_user_data').upsert({user_id:cloudUser.id,payload:cloudPayload(),updated_at:new Date().toISOString()},{onConflict:'user_id'});
-    if(error){setCloudUI('Sync failed');console.error(error);return;}
-    setCloudUI('Synced');
-    const el=document.getElementById('cloud-last-sync');if(el)el.textContent='Last synced '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-  }
-  function scheduleCloudSync(){if(!cloudUser||cloudHydrating)return;clearTimeout(cloudSyncTimer);cloudSyncTimer=setTimeout(()=>pushCloud().catch(console.error),900);}
-  async function restoreCloud(){
-    if(!sb||!cloudUser)return false;
-    const {data,error}=await sb.from('nexa_user_data').select('payload').eq('user_id',cloudUser.id).maybeSingle();
-    if(error){console.error(error);return false}
-    if(!data?.payload)return false;
-    cloudHydrating=true;
-    for(const k of CLOUD_KEYS){if(data.payload[k]!==undefined)localStorage.setItem('cb_'+k,JSON.stringify(data.payload[k]));}
-    cloudHydrating=false;return true;
-  }
-  async function setupCloudAuth(){
-    if(!sb){ document.getElementById('auth-modal')?.classList.add('show'); setCloudUI('Cloud unavailable'); return; }
-    const {data:{session}}=await Promise.race([
-      sb.auth.getSession(),
-      new Promise(resolve=>setTimeout(()=>resolve({data:{session:null}}),2500))
-    ]); cloudUser=session?.user||null;
-    const modal=document.getElementById('auth-modal');
-    if(!cloudUser){modal.classList.add('show');setCloudUI();return;}
-    modal.classList.remove('show');setCloudUI('Cloud connected');
-    const restored=await restoreCloud();if(restored) await loadAll();
-  }
-
 
   async function safeGet(key, fallback){ try{ const v=localStorage.getItem('cb_'+key); return v?JSON.parse(v):fallback; }catch(e){ return fallback; } }
-  async function save(key, value){ try{ localStorage.setItem('cb_'+key, JSON.stringify(value)); scheduleCloudSync(); if('Notification' in window && Notification.permission==='granted' && ['tasks','events','habits','habitLogs','classSchedule','config'].includes(key)){ navigator.serviceWorker.ready.then(r=>syncNexaPushSubscription(r)).catch(()=>{}); } }catch(e){ console.error(e); } }
+  async function save(key, value){ try{ localStorage.setItem('cb_'+key, JSON.stringify(value)); if('Notification' in window && Notification.permission==='granted' && ['tasks','events','habits','habitLogs','classSchedule','config'].includes(key)){ navigator.serviceWorker.ready.then(r=>syncNexaPushSubscription(r)).catch(()=>{}); } }catch(e){ console.error(e); } }
   async function loadAll(){
     state.exercises = await safeGet('exercises', DEFAULT_EXERCISES);
     state.logs = await safeGet('logs', []);
@@ -1475,7 +1429,7 @@
 
   // ---------- init ----------
   async function init(){
-    try{ await loadAll(); }catch(e){ console.error('Nexa data load recovery',e); }
+    await loadAll();
     const now = new Date(); calYear=now.getFullYear(); calMonth=now.getMonth();
     const ns=state.config.settings.notifications;
     ['classes','tasks','habits','prayer','events'].forEach(k=>{const el=document.getElementById('notify-'+k);if(el)el.checked=ns[k]!==false;const lead=document.getElementById('notify-'+k+'-lead');if(lead)lead.value=String((state.config.settings.notificationLead||{})[k]||0);});
@@ -1485,26 +1439,8 @@
     document.getElementById('shell').style.display='flex';
     renderDashboard();
     setInterval(()=>{ if(document.getElementById('page-today').classList.contains('active')) renderDashboard(); }, 60000);
-    setupCloudAuth().catch(e=>{console.error('Cloud auth unavailable',e);setCloudUI('Cloud unavailable');});
   }
-  document.getElementById('auth-signin').onclick=async()=>{
-    const email=document.getElementById('auth-email').value.trim(),password=document.getElementById('auth-password').value,msg=document.getElementById('auth-message');
-    msg.textContent='Logging in…';const {data,error}=await sb.auth.signInWithPassword({email,password});
-    if(error){msg.textContent=error.message;return} cloudUser=data.user;document.getElementById('auth-modal').classList.remove('show');const restored=await restoreCloud();if(restored){await loadAll();renderDashboard()}else await pushCloud();setCloudUI('Cloud connected');
-  };
-  document.getElementById('auth-signup').onclick=async()=>{
-    const email=document.getElementById('auth-email').value.trim(),password=document.getElementById('auth-password').value,msg=document.getElementById('auth-message');
-    if(password.length<8){msg.textContent='Use a password with at least 8 characters.';return}
-    msg.textContent='Creating account…';const {data,error}=await sb.auth.signUp({email,password,options:{emailRedirectTo:location.origin}});
-    if(error){msg.textContent=error.message;return}
-    if(data.session){cloudUser=data.user;document.getElementById('auth-modal').classList.remove('show');await pushCloud();setCloudUI('Cloud connected');}
-    else msg.textContent='Check your email to confirm your account, then log in.';
-  };
-  document.getElementById('cloud-sync-btn').onclick=()=>pushCloud();
-  document.getElementById('cloud-signout-btn').onclick=async()=>{if(!sb)return;await pushCloud();await sb.auth.signOut();cloudUser=null;setCloudUI();document.getElementById('auth-modal').classList.add('show');};
-  if(sb) sb.auth.onAuthStateChange((_event,session)=>{cloudUser=session?.user||null;setCloudUI();});
-
-  init().catch(e=>{console.error('Nexa init failed',e);document.getElementById('loading').style.display='none';document.getElementById('shell').style.display='flex';document.getElementById('auth-modal')?.classList.add('show');});
+  init();
 })();
 
   // ---------- PWA notifications ----------
@@ -1524,11 +1460,9 @@
         applicationServerKey:urlBase64ToUint8Array(cfg.publicKey)
       });
     }
-    const {data:{session}}=await sb.auth.getSession();
-    if(!session?.access_token) throw new Error('Sign in before enabling notifications');
     const response=await fetch(cfg.subscribeUrl,{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         subscription:subscription.toJSON(),
         timezone:Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
@@ -1538,8 +1472,8 @@
           habits:JSON.parse(localStorage.getItem('cb_habits')||'[]'),
           habitLogs:JSON.parse(localStorage.getItem('cb_habitLogs')||'{}'),
           classes:JSON.parse(localStorage.getItem('cb_classSchedule')||'[]'),
-          notificationSettings:(JSON.parse(localStorage.getItem('cb_config')||'{}').settings||{}).notifications||{classes:true,habits:true,prayer:true,events:true},
-          notificationLead:(JSON.parse(localStorage.getItem('cb_config')||'{}').settings||{}).notificationLead||{classes:15,habits:0,prayer:0,events:0}
+          notificationSettings:(JSON.parse(localStorage.getItem('cb_config')||'{}').settings||{}).notifications||{classes:true,tasks:true,habits:true,prayer:true,events:true},
+          notificationLead:(JSON.parse(localStorage.getItem('cb_config')||'{}').settings||{}).notificationLead||{classes:15,tasks:0,habits:0,prayer:0,events:0}
         }
       })
     });
