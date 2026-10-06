@@ -803,7 +803,7 @@
       const day=d.toLocaleDateString('en-US',{day:'numeric'});
       const mon=d.toLocaleDateString('en-US',{month:'short'}).toUpperCase();
       const when=e.date===todayKey()?'TODAY':d.toLocaleDateString('en-US',{weekday:'short'}).toUpperCase();
-      return '<div class="dash-event"><div class="dash-datebox"><strong>'+day+'</strong><span>'+mon+'</span></div><div class="dash-event-main"><div class="dash-event-title">'+escapeHTML(e.title)+'</div><div class="dash-event-meta">'+when+(e.type?' · '+escapeHTML(e.type).toUpperCase():'')+'</div></div><span style="color:var(--muted);font-size:18px;">›</span></div>';
+      return '<div class="dash-event"><div class="dash-datebox"><strong>'+day+'</strong><span>'+mon+'</span></div><div class="dash-event-main"><div class="dash-event-title">'+escapeHTML(e.title)+'</div><div class="dash-event-meta">'+when+(e.type?' · '+escapeHTML(e.type).toUpperCase():'')+'</div></div></div>';
     }).join('') : '<p>Nothing scheduled.</p>';
   }
   function renderWidgetPrayer(el){
