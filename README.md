@@ -76,7 +76,7 @@ The backend runs on Supabase rather than on Vercel or inside the browser. It is 
 
 Its responsibilities include receiving push subscriptions, storing reminder configuration in PostgreSQL, running scheduled reminder checks, and sending Web Push notifications. Private backend credentials such as VAPID private keys and service-role credentials are kept out of frontend source control.
 
-The deployed backend is hosted by Supabase. Backend source and database migration files can also be version-controlled under `supabase/` so the GitHub repository documents the complete system without exposing secrets.
+The deployed backend is hosted by Supabase. Its Edge Function source and database schema migration are version-controlled under `supabase/`, so the repository documents both sides of the application without committing private backend credentials.
 
 ## Project Structure
 
@@ -92,8 +92,10 @@ NEXA/
 ├── icon-192.png
 ├── icon-512.png
 ├── apple-touch-icon.png
-└── supabase/                 # backend source/migrations when exported
+└── supabase/
     ├── functions/
+    │   ├── nexa-push-subscribe/
+    │   └── nexa-send-reminders/
     └── migrations/
 ```
 
