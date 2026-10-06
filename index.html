@@ -12,7 +12,8 @@
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=3">
 <link rel="icon" type="image/png" href="./icon-192.png?v=3">
 <link rel="manifest" href="manifest.webmanifest">
-<script src="./push-config.js"></script>\n<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./push-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <title>Nexa</title>
 <style>
   :root{
@@ -622,7 +623,8 @@
   function icon(name,size){ return (ICONS[name]||'').split('{{S}}').join(size||18); }
 
   let state = {exercises:[],logs:[],events:[],config:{},nutrition:{},tasks:[],habits:[],habitLogs:{},health:{steps:{},sleep:{},weight:[]},classSchedule:[],courses:[],subjects:[],subjectItems:[]};
-  let calYear, calMonth, calSelectedDate=null;\n  let cloudUser=null, cloudSyncTimer=null, cloudHydrating=false;
+  let calYear, calMonth, calSelectedDate=null;
+  let cloudUser=null, cloudSyncTimer=null, cloudHydrating=false;
   const CLOUD_KEYS=['exercises','logs','events','nutrition','tasks','habits','habitLogs','classSchedule','subjects','subjectItems','health','config'];
   const sb=window.supabase?.createClient('https://kpsnghviozowwjpqqity.supabase.co','sb_publishable_AoOlOroOz8Tw_buvKn-tBw_5FbZQOZD');
   function cloudPayload(){const out={};CLOUD_KEYS.forEach(k=>out[k]=state[k]);return out;}
