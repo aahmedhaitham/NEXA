@@ -243,11 +243,19 @@
       return '<div class="nutri-row"><div class="nutri-label"><span>'+label+'</span><span class="val">'+Math.round(nut[k])+(goal>0?' / '+Math.round(goal):'')+'</span></div><div class="nutri-bar"><div class="nutri-fill" style="width:'+pct+'%;background:'+color+';"></div></div></div>';
     }).join('');
   }
+  function formatHabitTime(value){
+    if(!value) return '';
+    const [h,m]=String(value).split(':').map(Number);
+    if(!Number.isFinite(h)||!Number.isFinite(m)) return value;
+    const hour=h%12||12;
+    return `${hour}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}`;
+  }
+
   function renderWidgetHabits(el){
     const log = state.habitLogs[todayKey()] || {};
     el.innerHTML = state.habits.length ? '<div class="dash-habits">'+state.habits.map(h=>{
       const done = !!log[h.id];
-      return '<button type="button" class="dash-habit'+(done?' done':'')+'" data-habit="'+h.id+'"><span>'+escapeHTML(h.name)+(h.time?'<small style="display:block;color:var(--muted);font-size:10px;margin-top:3px;">'+h.time+'</small>':'')+'</span><span class="dash-habit-mark">'+(done?'✓':'')+'</span></button>';
+      return '<button type="button" class="dash-habit'+(done?' done':'')+'" data-habit="'+h.id+'"><span>'+escapeHTML(h.name)+(h.time?'<small style="display:block;color:var(--muted);font-size:10px;margin-top:3px;">'+formatHabitTime(h.time)+'</small>':'')+'</span><span class="dash-habit-mark">'+(done?'✓':'')+'</span></button>';
     }).join('')+'</div>' : '<div class="empty-state">No habits yet — add one in Health → Habits.</div>';
     el.querySelectorAll('[data-habit]').forEach(btn=>btn.addEventListener('click', async ()=>{
       const key=todayKey(); if(!state.habitLogs[key]) state.habitLogs[key]={};
@@ -446,7 +454,7 @@
       const row = document.createElement('div'); row.className='heat-row';
       let streak=0; for(let i=days.length-1;i>=0;i--){ if((state.habitLogs[days[i]]||{})[h.id]) streak++; else break; }
       const cellsHTML = days.map(d=>'<div class="heat-cell'+(((state.habitLogs[d]||{})[h.id])?' on':'')+'" data-date="'+d+'" data-habit="'+h.id+'"></div>').join('');
-      row.innerHTML = '<div class="heat-name">'+escapeHTML(h.name)+(h.time?'<div style="font-size:10px;color:var(--muted);margin-top:2px;">'+h.time+'</div>':'')+'</div><div class="heat-cells">'+cellsHTML+'</div><div class="heat-streak">'+streak+'d streak</div><div class="item-actions"><button class="btn gray small" data-edit-habit="'+h.id+'">Edit</button><button class="btn gray small" data-del-habit="'+h.id+'">Delete</button></div>';
+      row.innerHTML = '<div class="heat-name">'+escapeHTML(h.name)+(h.time?'<div style="font-size:10px;color:var(--muted);margin-top:2px;">'+formatHabitTime(h.time)+'</div>':'')+'</div><div class="heat-cells">'+cellsHTML+'</div><div class="heat-streak">'+streak+'d streak</div><div class="item-actions"><button class="btn gray small" data-edit-habit="'+h.id+'">Edit</button><button class="btn gray small" data-del-habit="'+h.id+'">Delete</button></div>';
       wrap.appendChild(row);
     });
     wrap.querySelectorAll('[data-edit-habit]').forEach(btn=>btn.addEventListener('click',()=>{const h=state.habits.find(x=>x.id===btn.dataset.editHabit);if(!h)return;document.getElementById('habit-edit-id').value=h.id;document.getElementById('habit-in-name').value=h.name;document.getElementById('habit-in-time').value=h.time||'';document.getElementById('habit-form').style.display='block';document.getElementById('habit-in-name').focus();}));
