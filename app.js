@@ -285,6 +285,8 @@
     el.innerHTML = '<div class="prayer-list">' + order.map(([k,l])=>'<div class="prayer-item'+(k===nextKey?' next':'')+'"><div class="pname">'+l+'</div><div class="ptime">'+fmtTime(times[k])+'</div></div>').join('') + '</div>' +
       '<p style="text-align:center;margin-top:8px;color:var(--coral);font-weight:700;">Next: '+order.find(o=>o[0]===nextKey)[1]+' in '+h+'h '+m+'m</p>';
   }
+  document.addEventListener('dblclick', e=>{ if(!e.target.closest('input,textarea,select,button,a')) e.preventDefault(); }, {passive:false});
+
   let dragId = null;
   function renderDashboard(){
     document.getElementById('dash-date-overview').textContent = new Date().toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'});
