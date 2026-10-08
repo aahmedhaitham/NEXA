@@ -39,7 +39,9 @@ Deno.serve(async(req:Request)=>{
    if(ns.habits!==false){
     const logs=(rd.habitLogs||{})[p.date]||{}, habits=rd.habits||[];
     const scheduled=(h:any)=>{const days=Array.isArray(h.days)&&h.days.length?h.days:["daily"];return days.includes("daily")||days.includes(p.day);};
-    for(const h of habits){if(scheduled(h)&&h.time&&!logs[h.id]){const at=min(h.time)-Number(lead.habits||0);if(now>=at&&now<=at+20)add(p.date+"|habit|"+h.id,"Habit reminder",h.name);}}
+    const timedGroups:any={};
+    for(const h of habits){if(scheduled(h)&&h.time&&!logs[h.id]){const at=min(h.time)-Number(lead.habits||0);if(now>=at&&now<=at+20){const group=String(at);(timedGroups[group]||(timedGroups[group]=[])).push(h.name);}}}
+    for(const [at,names] of Object.entries(timedGroups) as any){const list=names as string[];add(p.date+"|habits|"+at,"Habit reminders",list.join(", "));}
     const untimed=habits.filter((h:any)=>scheduled(h)&&!h.time&&!logs[h.id]); if(untimed.length&&now>=1200)add(p.date+"|habits","Habit check-in","Complete today’s habits in Nexa.");
    }
    const pt=prayers(p,row.timezone||"UTC"); if(ns.prayer!==false) for(const [k,label] of [["fajr","Fajr"],["dhuhr","Dhuhr"],["asr","Asr"],["maghrib","Maghrib"],["isha","Isha"]] as any){const n=Number(lead.prayer||0),at=Math.round(pt[k]*60)-n;if(now>=at&&now<=at+20)add(p.date+"|prayer|"+k,label+" prayer",n?label+" is in "+n+" minutes.":"It’s time for "+label+".");}
