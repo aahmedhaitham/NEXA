@@ -38,8 +38,9 @@ Deno.serve(async(req:Request)=>{
    if(ns.events!==false) for(const e of rd.events||[]){if(!e.done&&e.date===p.date&&now>=540-Number(lead.events||0))add(p.date+"|event|"+e.id,"Today: "+e.title,e.type||"Calendar event");}
    if(ns.habits!==false){
     const logs=(rd.habitLogs||{})[p.date]||{}, habits=rd.habits||[];
-    for(const h of habits){if(h.time&&!logs[h.id]){const at=min(h.time)-Number(lead.habits||0);if(now>=at&&now<=at+20)add(p.date+"|habit|"+h.id,"Habit reminder",h.name);}}
-    const untimed=habits.filter((h:any)=>!h.time&&!logs[h.id]); if(untimed.length&&now>=1200)add(p.date+"|habits","Habit check-in","Complete today’s habits in Nexa.");
+    const scheduled=(h:any)=>{const days=Array.isArray(h.days)&&h.days.length?h.days:["daily"];return days.includes("daily")||days.includes(p.day);};
+    for(const h of habits){if(scheduled(h)&&h.time&&!logs[h.id]){const at=min(h.time)-Number(lead.habits||0);if(now>=at&&now<=at+20)add(p.date+"|habit|"+h.id,"Habit reminder",h.name);}}
+    const untimed=habits.filter((h:any)=>scheduled(h)&&!h.time&&!logs[h.id]); if(untimed.length&&now>=1200)add(p.date+"|habits","Habit check-in","Complete today’s habits in Nexa.");
    }
    const pt=prayers(p,row.timezone||"UTC"); if(ns.prayer!==false) for(const [k,label] of [["fajr","Fajr"],["dhuhr","Dhuhr"],["asr","Asr"],["maghrib","Maghrib"],["isha","Isha"]] as any){const n=Number(lead.prayer||0),at=Math.round(pt[k]*60)-n;if(now>=at&&now<=at+20)add(p.date+"|prayer|"+k,label+" prayer",n?label+" is in "+n+" minutes.":"It’s time for "+label+".");}
   }
