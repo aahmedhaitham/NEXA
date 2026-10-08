@@ -80,7 +80,6 @@
   function haptic(ms=12){ try{ if(navigator.vibrate) navigator.vibrate(ms); }catch(_){} }
 
   const LAT=30.0444, LNG=31.2357;
-  const TZ=-(new Date().getTimezoneOffset()/60);
   function deg(x){return x*Math.PI/180;} function rad(x){return x*180/Math.PI;} function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
   function dayOfYear(d){ return Math.floor((d - new Date(d.getFullYear(),0,0))/86400000); }
   function calcPrayerTimes(date){
@@ -88,6 +87,7 @@
     const EoT = 9.87*Math.sin(2*B) - 7.53*Math.cos(B) - 1.5*Math.sin(B);
     const decl = deg(23.45*Math.sin(deg(360/365*(284+N))));
     const latR = deg(LAT);
+    const TZ=-(new Date(date.getFullYear(),date.getMonth(),date.getDate()).getTimezoneOffset()/60);
     const solarNoon = 12+TZ-LNG/15-EoT/60;
     function hourAngle(a){ const angle=deg(a); const c=(-Math.sin(angle)-Math.sin(latR)*Math.sin(decl))/(Math.cos(latR)*Math.cos(decl)); return rad(Math.acos(clamp(c,-1,1)))/15; }
     function asrHA(){ const alt=Math.atan(1/(1+Math.tan(Math.abs(latR-decl)))); const c=(Math.sin(alt)-Math.sin(latR)*Math.sin(decl))/(Math.cos(latR)*Math.cos(decl)); return rad(Math.acos(clamp(c,-1,1)))/15; }
