@@ -240,7 +240,7 @@
   .heat-name{width:110px;flex-shrink:0;font-size:13px;font-weight:600;}
   .heat-cells{display:flex;gap:3px;flex:1;}
   .heat-cell{width:16px;height:16px;border-radius:4px;background:rgba(255,255,255,0.05);}
-  .heat-cell.on{background:var(--green);}
+   .heat-cell.on{background:var(--green);}.heat-cell.muted{opacity:.22;pointer-events:none;}
   .heat-streak{width:60px;text-align:right;font-size:12px;color:var(--muted);font-weight:700;flex-shrink:0;}
   .quick-done{min-width:58px;min-height:34px;padding:7px 10px!important;font-size:11px!important;border-radius:10px!important;flex-shrink:0}.quick-done.done{background:rgba(51,214,122,.13);color:var(--green)}
   .edit-actions{display:flex;gap:6px;flex-shrink:0}
