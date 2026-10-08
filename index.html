@@ -149,6 +149,18 @@
           <button class="btn small" id="habit-new-btn">+ New habit</button></div>
         <div class="card" id="habit-form" style="display:none;"><input type="hidden" id="habit-edit-id">
           <div class="field"><label>Habit name</label><input type="text" id="habit-in-name" placeholder="e.g. Read 10 pages"></div>
+          <div class="field"><label>Days</label>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;" id="habit-day-picker">
+              <button type="button" class="exercise-chip active" data-day="daily">Every day</button>
+              <button type="button" class="exercise-chip" data-day="sat">Sat</button>
+              <button type="button" class="exercise-chip" data-day="sun">Sun</button>
+              <button type="button" class="exercise-chip" data-day="mon">Mon</button>
+              <button type="button" class="exercise-chip" data-day="tue">Tue</button>
+              <button type="button" class="exercise-chip" data-day="wed">Wed</button>
+              <button type="button" class="exercise-chip" data-day="thu">Thu</button>
+              <button type="button" class="exercise-chip" data-day="fri">Fri</button>
+            </div>
+          </div>
           <div class="field"><label>Reminder time <span style="text-transform:none;font-weight:500;">(optional)</span></label><input type="time" id="habit-in-time"></div>
           <div class="grid2"><button class="btn gray" id="habit-cancel-btn">Cancel</button><button class="btn" id="habit-save-btn">Add habit</button></div>
         </div>
