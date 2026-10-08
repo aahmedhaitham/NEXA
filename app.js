@@ -63,6 +63,7 @@
     if(somedayEvents.length){somedayEvents.forEach(e=>{if(!state.tasks.some(t=>t.id==='from-'+e.id))state.tasks.push({id:'from-'+e.id,title:e.title,notes:e.notes||'',done:!!e.done,subtasks:[]});});state.events=state.events.filter(e=>!!e.date);localStorage.setItem('cb_tasks',JSON.stringify(state.tasks));localStorage.setItem('cb_events',JSON.stringify(state.events));}
     state.tasks.forEach(t=>{delete t.dueDate;delete t.priority;});
     state.habits = await safeGet('habits', DEFAULT_HABITS);
+    state.habits.forEach(h=>{ if(!Array.isArray(h.days)||!h.days.length) h.days=['daily']; });
     state.habitLogs = await safeGet('habitLogs', {});
     state.health = await safeGet('health', {steps:{}, sleep:{}, weight:[]});
     state.classSchedule = await safeGet('classSchedule', []);
@@ -195,8 +196,12 @@
     }
   }
 
+  function habitDayCode(d){ const map={0:'sun',1:'mon',2:'tue',3:'wed',4:'thu',5:'fri',6:'sat'}; return map[d.getDay()]; }
+  function habitIsScheduled(h,d=new Date()){ const days=Array.isArray(h.days)&&h.days.length?h.days:['daily']; return days.includes('daily')||days.includes(habitDayCode(d)); }
+  function scheduledHabitsForDate(d=new Date()){ return state.habits.filter(h=>habitIsScheduled(h,d)); }
   function renderStatbar(){
-    const doneToday = Object.values((state.habitLogs[todayKey()]||{})).filter(Boolean).length;
+    const scheduled=scheduledHabitsForDate();
+    const doneToday = scheduled.filter(h=>(state.habitLogs[todayKey()]||{})[h.id]).length;
     const tasksOpen = state.tasks.filter(t=>!t.done).length;
     const wrap = document.getElementById('statbar');
     wrap.innerHTML = '';
@@ -253,10 +258,11 @@
 
   function renderWidgetHabits(el){
     const log = state.habitLogs[todayKey()] || {};
-    el.innerHTML = state.habits.length ? '<div class="dash-habits">'+state.habits.map(h=>{
+    const scheduled = scheduledHabitsForDate();
+    el.innerHTML = scheduled.length ? '<div class="dash-habits">'+scheduled.map(h=>{
       const done = !!log[h.id];
       return '<button type="button" class="dash-habit'+(done?' done':'')+'" data-habit="'+h.id+'"><span>'+escapeHTML(h.name)+(h.time?'<small style="display:block;color:var(--muted);font-size:10px;margin-top:3px;">'+formatHabitTime(h.time)+'</small>':'')+'</span><span class="dash-habit-mark">'+(done?'✓':'')+'</span></button>';
-    }).join('')+'</div>' : '<div class="empty-state">No habits yet — add one in Health → Habits.</div>';
+    }).join('')+'</div>' : '<div class="empty-state">No habits scheduled today.</div>';
     el.querySelectorAll('[data-habit]').forEach(btn=>btn.addEventListener('click', async ()=>{
       const key=todayKey(); if(!state.habitLogs[key]) state.habitLogs[key]={};
       btn.classList.add('item-complete');await new Promise(r=>setTimeout(r,140));state.habitLogs[key][btn.dataset.habit] = !state.habitLogs[key][btn.dataset.habit]; haptic();
@@ -451,15 +457,28 @@
   function renderHabitGrid(){
     const wrap = document.getElementById('habit-grid'); wrap.innerHTML = '';
     if(!state.habits.length){ wrap.innerHTML='<p>No habits yet.</p>'; return; }
-    const days = []; for(let i=13;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); days.push(dateKey(d)); }
+    const days = []; for(let i=13;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); days.push(new Date(d)); }
     state.habits.forEach(h=>{
       const row = document.createElement('div'); row.className='heat-row';
-      let streak=0; for(let i=days.length-1;i>=0;i--){ if((state.habitLogs[days[i]]||{})[h.id]) streak++; else break; }
-      const cellsHTML = days.map(d=>'<div class="heat-cell'+(((state.habitLogs[d]||{})[h.id])?' on':'')+'" data-date="'+d+'" data-habit="'+h.id+'"></div>').join('');
-      row.innerHTML = '<div class="heat-name">'+escapeHTML(h.name)+(h.time?'<div style="font-size:10px;color:var(--muted);margin-top:2px;">'+formatHabitTime(h.time)+'</div>':'')+'</div><div class="heat-cells">'+cellsHTML+'</div><div class="heat-streak">'+streak+'d streak</div><div class="item-actions"><button class="btn gray small" data-edit-habit="'+h.id+'">Edit</button><button class="btn gray small" data-del-habit="'+h.id+'">Delete</button></div>';
+      let streak=0;
+      for(let i=days.length-1;i>=0;i--){
+        if(!habitIsScheduled(h,days[i])) continue;
+        if((state.habitLogs[dateKey(days[i])]||{})[h.id]) streak++; else break;
+      }
+      const cellsHTML = days.map(d=>{
+        const key=dateKey(d), scheduled=habitIsScheduled(h,d), on=!!((state.habitLogs[key]||{})[h.id]);
+        return '<div class="heat-cell'+(on?' on':'')+(scheduled?'':' muted')+'" data-date="'+key+'" data-habit="'+h.id+'"'+(scheduled?'':' aria-hidden="true"')+'></div>';
+      }).join('');
+      const scheduleLabel = (Array.isArray(h.days)&&h.days.length&&h.days[0]!=='daily') ? h.days.map(x=>x.toUpperCase()).join(' · ') : 'Every day';
+      row.innerHTML = '<div class="heat-name">'+escapeHTML(h.name)+(h.time?'<div style="font-size:10px;color:var(--muted);margin-top:2px;">'+formatHabitTime(h.time)+'</div>':'')+'<div style="font-size:9px;color:var(--muted);margin-top:2px;">'+scheduleLabel+'</div></div><div class="heat-cells">'+cellsHTML+'</div><div class="heat-streak">'+streak+'d streak</div><div class="item-actions"><button class="btn gray small" data-edit-habit="'+h.id+'">Edit</button><button class="btn gray small" data-del-habit="'+h.id+'">Delete</button></div>';
       wrap.appendChild(row);
     });
-    wrap.querySelectorAll('[data-edit-habit]').forEach(btn=>btn.addEventListener('click',()=>{const h=state.habits.find(x=>x.id===btn.dataset.editHabit);if(!h)return;document.getElementById('habit-edit-id').value=h.id;document.getElementById('habit-in-name').value=h.name;document.getElementById('habit-in-time').value=h.time||'';document.getElementById('habit-form').style.display='block';document.getElementById('habit-in-name').focus();}));
+    wrap.querySelectorAll('[data-edit-habit]').forEach(btn=>btn.addEventListener('click',()=>{
+      const h=state.habits.find(x=>x.id===btn.dataset.editHabit);if(!h)return;
+      document.getElementById('habit-edit-id').value=h.id;document.getElementById('habit-in-name').value=h.name;document.getElementById('habit-in-time').value=h.time||'';
+      document.querySelectorAll('#habit-day-picker .exercise-chip').forEach(b=>b.classList.toggle('active',(Array.isArray(h.days)&&h.days.length?h.days:['daily']).includes(b.dataset.day)));
+      document.getElementById('habit-form').style.display='block';document.getElementById('habit-in-name').focus();
+    }));
     wrap.querySelectorAll('[data-del-habit]').forEach(btn=>btn.addEventListener('click', async ()=>{
       if(!await nexaConfirm('Delete habit?','Its history will be removed too.')) return;
       const hid = btn.dataset.delHabit;
@@ -469,13 +488,13 @@
       offerUndo('Habit deleted',async()=>{state.habits.splice(Math.min(idx,state.habits.length),0,copy);Object.entries(history).forEach(([d,v])=>{if(!state.habitLogs[d])state.habitLogs[d]={};state.habitLogs[d][hid]=v;});await save('habits',state.habits);await save('habitLogs',state.habitLogs);renderHabitGrid();renderStatbar();});
     }));
     wrap.querySelectorAll('.heat-cell').forEach(c=>c.addEventListener('click', async ()=>{
+      if(c.classList.contains('muted')) return;
       const d=c.dataset.date, hid=c.dataset.habit;
       if(!state.habitLogs[d]) state.habitLogs[d]={};
       state.habitLogs[d][hid] = !state.habitLogs[d][hid];
       await save('habitLogs', state.habitLogs); renderHabitGrid(); renderStatbar();
     }));
   }
-
   function renderNutritionPage(){
     const nut = state.nutrition[todayKey()] || {calories:0,protein:0,carbs:0,fat:0};
     const g = state.config.settings;
@@ -777,15 +796,33 @@
 
   document.getElementById('habit-new-btn').addEventListener('click', ()=>{document.getElementById('habit-edit-id').value='';document.getElementById('habit-form').style.display='block';});
   document.getElementById('habit-cancel-btn').addEventListener('click', ()=>{ document.getElementById('habit-form').style.display='none'; });
+  document.querySelectorAll('#habit-day-picker .exercise-chip').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if(btn.dataset.day==='daily'){
+        const active=!btn.classList.contains('active');
+        document.querySelectorAll('#habit-day-picker .exercise-chip').forEach(b=>b.classList.remove('active'));
+        if(active) btn.classList.add('active');
+      }else{
+        document.querySelector('#habit-day-picker [data-day="daily"]').classList.remove('active');
+        btn.classList.toggle('active');
+      }
+    });
+  });
   document.getElementById('habit-save-btn').addEventListener('click', async ()=>{
     const name = document.getElementById('habit-in-name').value.trim();
     if(!name){ showToast('Name the habit.'); return; }
     const time = document.getElementById('habit-in-time').value||null;
+    const selectedDays = Array.from(document.querySelectorAll('#habit-day-picker .exercise-chip.active')).map(b=>b.dataset.day);
+    if(!selectedDays.length){ showToast('Pick at least one day.'); return; }
     const editId=document.getElementById('habit-edit-id').value;
-    if(editId){const h=state.habits.find(x=>x.id===editId);if(h){h.name=name;h.time=time;}}else state.habits.push({id:'h-'+Date.now(), name, time, preset:false});
+    if(editId){const h=state.habits.find(x=>x.id===editId);if(h){h.name=name;h.time=time;h.days=selectedDays;}}
+    else state.habits.push({id:'h-'+Date.now(), name, time, days:selectedDays, preset:false});
     await save('habits', state.habits);
-    document.getElementById('habit-in-name').value=''; document.getElementById('habit-in-time').value=''; document.getElementById('habit-edit-id').value=''; document.getElementById('habit-form').style.display='none';
-    renderHabitGrid(); showToast('Habit added.');
+    document.getElementById('habit-in-name').value=''; document.getElementById('habit-in-time').value=''; document.getElementById('habit-edit-id').value='';
+    document.querySelectorAll('#habit-day-picker .exercise-chip').forEach(b=>b.classList.remove('active'));
+    document.getElementById('habit-day-picker [data-day="daily"]').classList.add('active');
+    document.getElementById('habit-form').style.display='none';
+    renderHabitGrid(); showToast(editId?'Habit updated.':'Habit added.');
   });
 
   document.getElementById('nut-add-btn').addEventListener('click', async ()=>{
