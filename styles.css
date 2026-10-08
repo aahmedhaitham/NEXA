@@ -163,7 +163,7 @@
   .dash-habit.done{border-color:rgba(51,214,122,.45);background:rgba(51,214,122,.10);}
   .dash-habit-mark{width:22px;height:22px;border-radius:7px;border:1px solid rgba(255,255,255,.18);display:grid;place-items:center;flex-shrink:0;color:var(--green);}
   .dash-task{display:flex;align-items:center;gap:11px;padding:11px 12px;margin-bottom:8px;background:var(--surface2);border:1px solid var(--hairline);border-radius:14px;}
-  .dash-task:last-child{margin-bottom:0}.dash-task-main{flex:1;min-width:0}.dash-task-title{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dash-task-date{font-size:10.5px;color:var(--muted);margin-top:3px;}
+  .dash-task:last-child{margin-bottom:0}.dash-task-main{flex:1;min-width:0}.dash-task-title{font-size:13px;font-weight:700;white-space:normal;overflow-wrap:anywhere;word-break:break-word;line-height:1.25}.dash-task-date{font-size:10.5px;color:var(--muted);margin-top:3px;}
   .dash-task.overdue,.task-row.overdue{border-color:rgba(255,90,43,.45);background:rgba(255,90,43,.07)} .overdue-text{color:var(--coral)!important;font-weight:800}
   .class-live{color:var(--green);border-color:rgba(51,214,122,.35);background:rgba(51,214,122,.08)} .class-soon{color:var(--gold);border-color:rgba(255,194,75,.35);background:rgba(255,194,75,.08)}
   .empty-state{text-align:center;padding:18px 10px;border:1px dashed rgba(255,255,255,.13);border-radius:14px;color:var(--muted);font-size:12.5px;background:rgba(255,255,255,.025)}
