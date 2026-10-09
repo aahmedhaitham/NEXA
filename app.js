@@ -202,7 +202,7 @@
   function renderStatbar(){
     const scheduled=scheduledHabitsForDate();
     const doneToday = scheduled.filter(h=>(state.habitLogs[todayKey()]||{})[h.id]).length;
-    const tasksOpen = state.tasks.filter(t=>!t.done).length;
+    const tasksOpen = state.tasks.filter(t=>!t.done).length + state.subjectItems.filter(i=>!i.done).length;
     const wrap = document.getElementById('statbar');
     wrap.innerHTML = '';
     [['Open tasks',tasksOpen],['Habits today',doneToday+'/'+state.habits.length]]
@@ -599,11 +599,11 @@
         const check = document.createElement('button');
         check.className = 'checkbtn' + (item.done ? ' checked' : '');
         check.textContent = item.done ? '\u2713' : '';
-        check.onclick = async () => { item.done = !item.done; await save('subjectItems', state.subjectItems); renderSubjectsPage(); };
+        check.onclick = async () => { item.done = !item.done; await save('subjectItems', state.subjectItems); renderSubjectsPage(); renderStatbar(); };
         const lbl = document.createElement('div'); lbl.style.flex = '1';
         lbl.innerHTML = '<span class="ttitle'+(item.done?' done':'')+'">'+escapeHTML(item.title)+'</span>';
         const del = document.createElement('button'); del.className = 'btn gray small'; del.textContent = '\u2715';
-        del.onclick = async () => { state.subjectItems = state.subjectItems.filter(x=>x.id!==item.id); await save('subjectItems', state.subjectItems); renderSubjectsPage(); };
+        del.onclick = async () => { state.subjectItems = state.subjectItems.filter(x=>x.id!==item.id); await save('subjectItems', state.subjectItems); renderSubjectsPage(); renderStatbar(); };
         row.appendChild(check); row.appendChild(lbl); row.appendChild(del);
         itemsWrap.appendChild(row);
       });
@@ -616,7 +616,7 @@
         if(e.key === 'Enter' && input.value.trim()){
           state.subjectItems.push({id:'si-'+Date.now(), subjectId:s.id, title:input.value.trim(), done:false});
           await save('subjectItems', state.subjectItems);
-          renderSubjectsPage();
+          renderSubjectsPage(); renderStatbar();
         }
       });
       addRow.appendChild(input);
@@ -629,7 +629,7 @@
         state.subjects = state.subjects.filter(x=>x.id!==s.id);
         state.subjectItems = state.subjectItems.filter(x=>x.subjectId!==s.id);
         await save('subjects', state.subjects); await save('subjectItems', state.subjectItems);
-        renderSubjectsPage();
+        renderSubjectsPage(); renderStatbar();
       };
       card.appendChild(delSubject);
       wrap.appendChild(card);
@@ -641,7 +641,7 @@
     state.subjects.push({id:'subj-'+Date.now(), name});
     await save('subjects', state.subjects);
     document.getElementById('subject-in-name').value = '';
-    renderSubjectsPage();
+    renderSubjectsPage(); renderStatbar();
     showToast('Subject added.');
   });
 
