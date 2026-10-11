@@ -94,6 +94,7 @@
     return {fajr:solarNoon-hourAngle(19.5), sunrise:solarNoon-hourAngle(0.833), dhuhr:solarNoon+(1/60), asr:solarNoon+asrHA(), maghrib:solarNoon+hourAngle(0.833), isha:solarNoon+hourAngle(17.5)};
   }
   function fmtTime(h){ h=((h%24)+24)%24; let hh=Math.floor(h), mm=Math.round((h-hh)*60); if(mm===60){mm=0;hh+=1;} hh=hh%24; const p=hh>=12?'PM':'AM'; let hh12=hh%12; if(hh12===0)hh12=12; return String(hh12).padStart(2,'0')+':'+String(mm).padStart(2,'0')+' '+p; }
+  function formatClassTime(value){const parts=String(value||'').split(':').map(Number);if(parts.length<2||!Number.isFinite(parts[0])||!Number.isFinite(parts[1]))return value||'';const h=parts[0],m=String(parts[1]).padStart(2,'0');return (h%12||12)+':'+m+' '+(h>=12?'PM':'AM');}
   function getNextPrayer(){
     const times=calcPrayerTimes(new Date());
     const order=[['fajr','Fajr'],['sunrise','Sunrise'],['dhuhr','Dhuhr'],['asr','Asr'],['maghrib','Maghrib'],['isha','Isha']];
@@ -649,7 +650,7 @@
   function renderClassRow(wrap, c){
     const row = document.createElement('div'); row.className='class-row '+c.type;
     const metaBits = ['ROOM '+escapeHTML(c.room||'-')];
-    row.innerHTML = '<div class="ctime">'+c.start+' \u2013 '+c.end+'</div>' +
+    row.innerHTML = '<div class="ctime">'+formatClassTime(c.start)+' \u2013 '+formatClassTime(c.end)+'</div>' +
       '<div style="flex:1;"><div class="csubject">'+escapeHTML(c.subject)+'</div><div class="croom">'+metaBits.join(' \u00b7 ')+'</div></div>' +
       '<span class="badge '+c.type+'">'+c.type+'</span>';
     const edit=document.createElement('button');edit.className='btn gray small';edit.textContent='Edit';edit.onclick=e=>{e.stopPropagation();openClassEdit(c);};
@@ -761,7 +762,7 @@
         '<div style="flex:1;min-width:0;"><div class="csubject">'+escapeHTML(c.subject)+'</div>'+
         (metaBits.length?'<div class="croom">'+metaBits.join(' \u00b7 ')+'</div>':'')+
         '<span class="badge '+c.type+'" style="display:inline-block;margin-top:7px;">'+c.type+'</span></div>'+
-        '<div class="ctime" style="width:auto;min-width:92px;text-align:right;align-self:center;color:var(--ink);font-size:13px;">'+c.start+' \u2013 '+c.end+'</div>';
+        '<div class="ctime" style="width:auto;min-width:92px;text-align:right;align-self:center;color:var(--ink);font-size:13px;">'+formatClassTime(c.start)+' \u2013 '+formatClassTime(c.end)+'</div>';
       el.appendChild(row);
     });
   }
