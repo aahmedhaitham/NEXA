@@ -288,3 +288,4 @@
   .main{overscroll-behavior-y:contain;}
 
   .dash-event{align-items:flex-start;}
+  .dash-event .dash-datebox{align-self:center;}
