@@ -232,7 +232,7 @@
     habits:{title:'Habits Today', render:renderWidgetHabits},
     tasks:{title:'Tasks Due Soon', render:renderWidgetTasks},
     calendar:{title:'Upcoming', render:renderWidgetCalendar},
-    prayer:{title:'Prayer Times & Check-in', render:renderWidgetPrayer}
+    prayer:{title:'Prayer Times', render:renderWidgetPrayer}
   };
   function renderWidgetTrain(el){
     const day = todayDayCode(); const cat = state.config.plan[day]||'rest';
