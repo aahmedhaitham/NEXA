@@ -313,7 +313,7 @@
     renderStatbar();
     const grid = document.getElementById('widget-grid');
     grid.innerHTML = '';
-    const order = state.config.dashboardOrder.filter(id=>id!=='creatine'&&id!=='prayer');
+    const order = state.config.dashboardOrder.filter(id=>id!=='creatine');
     order.forEach(id=>{
       const def = WIDGET_DEFS[id]; if(!def) return;
       const w = document.createElement('div');
