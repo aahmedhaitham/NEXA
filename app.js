@@ -204,7 +204,7 @@
   function habitDayCode(d){ const map={0:'sun',1:'mon',2:'tue',3:'wed',4:'thu',5:'fri',6:'sat'}; return map[d.getDay()]; }
   function habitStreak(h){let d=new Date();d.setHours(12,0,0,0);if(!habitIsScheduled(h,d)||!((state.habitLogs[dateKey(d)]||{})[h.id]))d.setDate(d.getDate()-1);let streak=0,guard=0;while(guard++<370){if(!habitIsScheduled(h,d)){d.setDate(d.getDate()-1);continue;}if((state.habitLogs[dateKey(d)]||{})[h.id]){streak++;d.setDate(d.getDate()-1);continue;}break;}return streak;}
   function renderPrayerCheckin(el){const names=[['fajr','Fajr'],['dhuhr','Dhuhr'],['asr','Asr'],['maghrib','Maghrib'],['isha','Isha']],log=state.prayerLogs[todayKey()]||{};el.innerHTML='<div class="prayer-check-grid">'+names.map(([k,n])=>'<button type="button" class="prayer-check'+(log[k]?' done':'')+'" data-prayer="'+k+'"><span>'+n+'</span><b>'+(log[k]?'✓':'○')+'</b></button>').join('')+'</div><div class="prayer-check-summary">'+names.filter(([k])=>log[k]).length+' of 5 prayers checked</div>';el.querySelectorAll('[data-prayer]').forEach(btn=>btn.onclick=async()=>{const key=todayKey();if(!state.prayerLogs[key])state.prayerLogs[key]={};const id=btn.dataset.prayer;state.prayerLogs[key][id]=!state.prayerLogs[key][id];await save('prayerLogs',state.prayerLogs);renderPrayerCheckin(el);});}
-  function renderCustomReminders(){const wrap=document.getElementById('custom-reminder-list');if(!wrap)return;const items=state.customReminders.slice().sort((x,y)=>(x.date+'T'+x.time).localeCompare(y.date+'T'+y.time));wrap.innerHTML=items.length?items.map(r=>'<div class="custom-reminder-row"><div><b>'+escapeHTML(r.title)+'</b><small>'+escapeHTML(r.date)+' · '+formatHabitTime(r.time)+' · '+(r.repeat==='daily'?'Daily':r.repeat==='weekly'?'Weekly':'Once')+'</small></div><button class="btn gray small" data-delete-reminder="'+r.id+'">Delete</button></div>').join(''):'<div class="empty-state">No custom reminders yet.</div>';wrap.querySelectorAll('[data-delete-reminder]').forEach(btn=>btn.onclick=async()=>{state.customReminders=state.customReminders.filter(r=>r.id!==btn.dataset.deleteReminder);await save('customReminders',state.customReminders);renderCustomReminders();await syncPushIfEnabled();});}
+  function renderCustomReminders(){}
   async function syncPushIfEnabled(){try{if('Notification'in window&&Notification.permission==='granted'){const reg=await navigator.serviceWorker.ready;await syncNexaPushSubscription(reg);}}catch(e){console.error('Reminder sync failed',e);}}
 
   function habitIsScheduled(h,d=new Date()){ const days=Array.isArray(h.days)&&h.days.length?h.days:['daily']; return days.includes('daily')||days.includes(habitDayCode(d)); }
@@ -260,6 +260,7 @@
       const color = k==='calories'?'var(--coral)':k==='protein'?'var(--blue)':k==='carbs'?'var(--gold)':'var(--purple)';
       return '<div class="nutri-row"><div class="nutri-label"><span>'+label+'</span><span class="val">'+Math.round(nut[k])+(goal>0?' / '+Math.round(goal):'')+'</span></div><div class="nutri-bar"><div class="nutri-fill" style="width:'+pct+'%;background:'+color+';"></div></div></div>';
     }).join('')+'<button type="button" class="btn secondary full dash-nutrition-add" id="dash-nutrition-add">+ Add nutrition</button>';
+    el.querySelector('#dash-nutrition-add').textContent='+ Add food';
     el.querySelector('#dash-nutrition-add').onclick=()=>{gotoPage('health');gotoSubtab('health','nutrition');};
   }
   function formatHabitTime(value){
@@ -295,15 +296,15 @@
       const day=d.toLocaleDateString('en-US',{day:'numeric'});
       const mon=d.toLocaleDateString('en-US',{month:'short'}).toUpperCase();
       const when=e.date===todayKey()?'TODAY':d.toLocaleDateString('en-US',{weekday:'short'}).toUpperCase();
-      return '<div class="dash-event"><div class="dash-datebox"><strong>'+day+'</strong><span>'+mon+'</span></div><button type="button" class="dash-event-main dash-event-open" data-open-event="'+e.id+'"><div class="dash-event-title">'+escapeHTML(e.title)+'</div><div class="dash-event-meta">'+when+(e.type?' · '+escapeHTML(e.type).toUpperCase():'')+'</div></button><button class="btn green quick-done" data-done-event="'+e.id+'">Done</button></div>';
+      return '<div class="dash-event dash-event-clickable" role="button" tabindex="0" data-open-event="'+e.id+'"><div class="dash-datebox"><strong>'+day+'</strong><span>'+mon+'</span></div><div class="dash-event-main"><div class="dash-event-title">'+escapeHTML(e.title)+'</div><div class="dash-event-meta">'+when+(e.type?' · '+escapeHTML(e.type).toUpperCase():'')+'</div></div></div>';
     }).join('') : '<div class="empty-state">Nothing upcoming — your calendar is clear.</div>';
-    el.querySelectorAll('[data-open-event]').forEach(b=>b.onclick=()=>{const e=state.events.find(x=>x.id===b.dataset.openEvent);if(!e)return;gotoPage('calendar');calSelectedDate=e.date;renderCalendar();renderCalDayDetail();openEventEdit(e);});
-    el.querySelectorAll('[data-done-event]').forEach(b=>b.onclick=async()=>{const e=state.events.find(x=>x.id===b.dataset.doneEvent);if(e){await animateOut(b.closest('.dash-event'),'item-complete');e.done=true;haptic();await save('events',state.events);renderDashboard();}});
+    const openEvent=b=>{const e=state.events.find(x=>x.id===b.dataset.openEvent);if(!e)return;gotoPage('calendar');calSelectedDate=e.date;renderCalendar();renderCalDayDetail();openEventEdit(e);};
+    el.querySelectorAll('[data-open-event]').forEach(b=>{b.onclick=()=>openEvent(b);b.onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();openEvent(b);}};});
   }
   function renderWidgetPrayer(el){
     const {times,order,nextKey,nextDiff} = getNextPrayer();
     const h=Math.floor(nextDiff), m=Math.round((nextDiff-h)*60);
-    el.innerHTML = '<div class="prayer-list">' + order.map(([k,l])=>'<div class="prayer-item'+(k===nextKey?' next':'')+'"><div class="pname">'+l+'</div><div class="ptime">'+fmtTime(times[k])+'</div></div>').join('') + '</div><p style="text-align:center;margin-top:8px;color:var(--coral);font-weight:700;">Next: '+order.find(o=>o[0]===nextKey)[1]+' in '+h+'h '+m+'m</p><h4 class="prayer-check-title">Did you pray?</h4><div id="dash-prayer-checkin"></div>';renderPrayerCheckin(el.querySelector('#dash-prayer-checkin'));
+    el.innerHTML = '<div class="prayer-list">' + order.map(([k,l])=>'<div class="prayer-item'+(k===nextKey?' next':'')+'"><div class="pname">'+l+'</div><div class="ptime">'+fmtTime(times[k])+'</div></div>').join('') + '</div><p style="text-align:center;margin-top:8px;color:var(--coral);font-weight:700;">Next: '+order.find(o=>o[0]===nextKey)[1]+' in '+h+'h '+m+'m</p>';
   }
   document.addEventListener('dblclick', e=>{ if(!e.target.closest('input,textarea,select,button,a')) e.preventDefault(); }, {passive:false});
 
@@ -865,7 +866,7 @@
   });
 
   document.getElementById('calendar-reminder-default').addEventListener('change',()=>{state.config.settings.calendarReminderHours=Number(document.getElementById('calendar-reminder-default').value);});
-  document.getElementById('custom-reminder-add').addEventListener('click',async()=>{const title=document.getElementById('custom-reminder-title').value.trim(),date=document.getElementById('custom-reminder-date').value,time=document.getElementById('custom-reminder-time').value,repeat=document.getElementById('custom-reminder-repeat').value;if(!title||!date||!time){showToast('Add a reminder, date, and time.');return;}state.customReminders.push({id:'rem-'+Date.now(),title,date,time,repeat,enabled:true});await save('customReminders',state.customReminders);document.getElementById('custom-reminder-title').value='';renderCustomReminders();await syncPushIfEnabled();showToast('Reminder saved.');});
+
   document.getElementById('save-settings-btn').addEventListener('click', async ()=>{
     state.config.settings.calendarReminderHours=Number(document.getElementById('calendar-reminder-default').value);
     state.config.settings.notifications={};
@@ -895,7 +896,7 @@
     const now = new Date(); calYear=now.getFullYear(); calMonth=now.getMonth();
     const ns=state.config.settings.notifications;
     ['classes','tasks','habits','prayer','events'].forEach(k=>{const el=document.getElementById('notify-'+k);if(el)el.checked=ns[k]!==false;const lead=document.getElementById('notify-'+k+'-lead');if(lead)lead.value=String((state.config.settings.notificationLead||{})[k]||0);});
-    document.getElementById('calendar-reminder-default').value=String(state.config.settings.calendarReminderHours??24);document.getElementById('custom-reminder-date').value=todayKey();renderCustomReminders();
+    document.getElementById('calendar-reminder-default').value=String(state.config.settings.calendarReminderHours??24);
     renderTabbar();
     wireSubtabs();
     document.getElementById('loading').style.display='none';
