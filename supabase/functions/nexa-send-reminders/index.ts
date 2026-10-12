@@ -53,7 +53,7 @@ Deno.serve(async(req:Request)=>{
     const logs=(rd.habitLogs||{})[p.date]||{}, habits=rd.habits||[];
     const scheduled=(h:any)=>{const days=Array.isArray(h.days)&&h.days.length?h.days:["daily"];return days.includes("daily")||days.includes(p.day);};
     const timedGroups:any={};
-    for(const h of habits){if(scheduled(h)&&h.time&&!logs[h.id]){const at=min(h.time)-Number(lead.habits||0);if(now>=at&&now<=at+20){const group=String(at);(timedGroups[group]||(timedGroups[group]=[])).push(h.name);}}}
+    for(const h of habits){const habitTime=(h.weeklyTimes||{})[p.day]||h.time;if(scheduled(h)&&habitTime&&!logs[h.id]){const at=min(habitTime)-Number(lead.habits||0);if(now>=at&&now<=at+20){const group=String(at);(timedGroups[group]||(timedGroups[group]=[])).push(h.name);}}}
     for(const [at,names] of Object.entries(timedGroups) as any){const list=names as string[];add(p.date+"|habits|"+at,"Habit reminders",list.join(", "));}
    }
    const pt=prayers(p,row.timezone||"UTC"); if(ns.prayer!==false) for(const [k,label] of [["fajr","Fajr"],["dhuhr","Dhuhr"],["asr","Asr"],["maghrib","Maghrib"],["isha","Isha"]] as any){const n=Number(lead.prayer||0),at=Math.round(pt[k]*60)-n;if(now>=at&&now<=at+20)add(p.date+"|prayer|"+k,label+" prayer",n?label+" is in "+n+" minutes.":"It’s time for "+label+".");}
