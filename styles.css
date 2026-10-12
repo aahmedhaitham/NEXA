@@ -327,3 +327,39 @@
   background:rgba(255,90,43,.09);
   border-color:rgba(255,90,43,.45);
 }
+
+
+/* Keep the glass/colored-border treatment only on Today's Classes, matching Upcoming. */
+#widget-grid .widget[data-id="classes"] .class-row{
+  background:rgba(255,255,255,.055)!important;
+  border:1px solid var(--border)!important;
+  border-left:4px solid var(--gray)!important;
+  -webkit-backdrop-filter:blur(30px) saturate(160%)!important;
+  backdrop-filter:blur(30px) saturate(160%)!important;
+  box-shadow:none!important;
+}
+#widget-grid .widget[data-id="classes"] .class-row.lecture{border-left-color:var(--coral)!important;}
+#widget-grid .widget[data-id="classes"] .class-row.lab{border-left-color:var(--gold)!important;}
+#widget-grid .widget[data-id="classes"] .class-row.tutorial{border-left-color:var(--blue)!important;}
+#widget-grid .widget[data-id="habits"] .dash-habit{
+  background:var(--surface2);
+  border-color:var(--hairline);
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+  box-shadow:none;
+}
+#widget-grid .widget[data-id="habits"] .dash-habit.done{
+  background:rgba(51,214,122,.10);
+  border-color:rgba(51,214,122,.45);
+}
+#widget-grid .widget[data-id="tasks"] .dash-task{
+  background:var(--surface2);
+  border-color:var(--hairline);
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+  box-shadow:none;
+}
+#widget-grid .widget[data-id="tasks"] .dash-task.overdue{
+  background:rgba(255,90,43,.07);
+  border-color:rgba(255,90,43,.45);
+}
