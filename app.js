@@ -209,7 +209,7 @@
   function habitIsScheduled(h,d=new Date()){ const days=Array.isArray(h.days)&&h.days.length?h.days:['daily']; return days.includes('daily')||days.includes(habitDayCode(d)); }
   function habitTimeForDate(h,d=new Date()){const key=habitDayCode(d),weekly=h.weeklyTimes||{};return weekly[key]!==undefined?weekly[key]:(h.time||null);}
   function renderHabitWeeklyTimes(h={}){const wrap=document.getElementById('habit-weekly-times');if(!wrap)return;const weekly=h.weeklyTimes||{};const days=[['mon','Monday'],['tue','Tuesday'],['wed','Wednesday'],['thu','Thursday'],['fri','Friday'],['sat','Saturday'],['sun','Sunday']];wrap.innerHTML='<div class="habit-time-head">Optional: set a different time for each day</div>'+days.map(([key,label])=>'<label class="habit-time-row"><span>'+label+'</span><input type="time" data-habit-time-day="'+key+'" value="'+(weekly[key]===undefined?'':weekly[key])+'" aria-label="'+label+' reminder time"></label>').join('')+'<p class="habit-time-help">Leave a day blank to use the default time above.</p>';}
-  function readHabitWeeklyTimes(){const result={};document.querySelectorAll('[data-habit-time-day]').forEach(input=>{if(input.value)result[input.dataset.habitTimeDay]=input.value;});return result;}
+  function readHabitWeeklyTimes(){const result={},form=document.getElementById('habit-weekly-times');if(!form)return result;form.querySelectorAll('[data-habit-time-day]').forEach(input=>{if(input.value)result[input.dataset.habitTimeDay]=input.value;});return result;}
   function scheduledHabitsForDate(d=new Date()){ return state.habits.filter(h=>habitIsScheduled(h,d)); }
   function renderStatbar(){
     const scheduled=scheduledHabitsForDate();
@@ -544,7 +544,7 @@
       grid.appendChild(cell);
     }
   }
-  function openEventEdit(ev){document.getElementById('event-edit-id').value=ev.id;document.getElementById('ev-title').value=ev.title;document.getElementById('ev-type').value=ev.type;document.getElementById('ev-date').value=ev.date||'';document.getElementById('ev-time').value=ev.time||'09:00';document.getElementById('ev-reminder').value=ev.reminderHours===undefined?'default':String(ev.reminderHours);document.getElementById('ev-notes').value=ev.notes||'';document.getElementById('cal-form').style.display='block';document.getElementById('ev-title').focus();}
+  function openEventEdit(ev){document.getElementById('event-edit-id').value=ev.id;document.getElementById('ev-title').value=ev.title;document.getElementById('ev-type').value=ev.type;document.getElementById('ev-date').value=ev.date||'';document.getElementById('ev-time').value=ev.time||'09:00';document.getElementById('ev-reminder').value=ev.reminderHours===undefined?'default':String(ev.reminderHours);document.getElementById('ev-notes').value=ev.notes||'';document.getElementById('cal-form').style.display='block';}
   function eventRow(ev){
     const row = document.createElement('div'); row.className='task-row';
     const check = document.createElement('button'); check.className='checkbtn'+(ev.done?' checked':''); check.textContent=ev.done?'\u2713':'';
@@ -795,7 +795,7 @@
     window.location.reload();
   });
 
-  document.getElementById('habit-new-btn').addEventListener('click', ()=>{document.getElementById('habit-edit-id').value='';document.getElementById('habit-form').style.display='block';});
+  document.getElementById('habit-new-btn').addEventListener('click', ()=>{document.getElementById('habit-edit-id').value='';document.getElementById('habit-in-name').value='';document.getElementById('habit-in-time').value='';renderHabitWeeklyTimes({});document.querySelectorAll('#habit-day-picker .exercise-chip').forEach(b=>b.classList.toggle('active',b.dataset.day==='daily'));document.getElementById('habit-form').style.display='block';});
   document.getElementById('habit-cancel-btn').addEventListener('click', ()=>{ document.getElementById('habit-form').style.display='none'; });
   document.querySelectorAll('#habit-day-picker .exercise-chip').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -824,7 +824,7 @@
     document.querySelectorAll('#habit-day-picker .exercise-chip').forEach(b=>b.classList.remove('active'));
     document.getElementById('habit-day-picker [data-day="daily"]').classList.add('active');
     document.getElementById('habit-form').style.display='none';
-    renderHabitGrid(); showToast(editId?'Habit updated.':'Habit added.');
+    renderHabitGrid();renderStatbar();renderDashboard(); showToast(editId?'Habit updated.':'Habit added.');
   });
 
   document.getElementById('nut-add-btn').addEventListener('click', async ()=>{
@@ -864,10 +864,10 @@
     renderAllCalendarBits(); await syncPushIfEnabled(); showToast('Saved.');
   });
 
-  document.getElementById('calendar-reminder-default').addEventListener('change',()=>{state.config.settings.calendarReminderHours=Number(document.getElementById('calendar-reminder-default').value);});
+  
 
   document.getElementById('save-settings-btn').addEventListener('click', async ()=>{
-    state.config.settings.calendarReminderHours=Number(document.getElementById('calendar-reminder-default').value);
+    
     state.config.settings.notifications={};
     state.config.settings.notificationLead={};
     ['classes','habits','prayer','events'].forEach(k=>{state.config.settings.notifications[k]=document.getElementById('notify-'+k).checked;state.config.settings.notificationLead[k]=parseInt(document.getElementById('notify-'+k+'-lead').value,10)||0;});
@@ -895,7 +895,7 @@
     const now = new Date(); calYear=now.getFullYear(); calMonth=now.getMonth();
     const ns=state.config.settings.notifications;
     ['classes','tasks','habits','prayer','events'].forEach(k=>{const el=document.getElementById('notify-'+k);if(el)el.checked=ns[k]!==false;const lead=document.getElementById('notify-'+k+'-lead');if(lead)lead.value=String((state.config.settings.notificationLead||{})[k]||0);});
-    document.getElementById('calendar-reminder-default').value=String(state.config.settings.calendarReminderHours??24);
+    
     renderTabbar();
     wireSubtabs();
     document.getElementById('loading').style.display='none';
