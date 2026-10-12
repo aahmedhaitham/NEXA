@@ -291,8 +291,9 @@
       const day=d.toLocaleDateString('en-US',{day:'numeric'});
       const mon=d.toLocaleDateString('en-US',{month:'short'}).toUpperCase();
       const when=e.date===todayKey()?'TODAY':d.toLocaleDateString('en-US',{weekday:'short'}).toUpperCase();
-      return '<div class="dash-event"><div class="dash-datebox"><strong>'+day+'</strong><span>'+mon+'</span></div><div class="dash-event-main"><div class="dash-event-title">'+escapeHTML(e.title)+'</div><div class="dash-event-meta">'+when+(e.type?' · '+escapeHTML(e.type).toUpperCase():'')+'</div></div><button class="btn green quick-done" data-done-event="'+e.id+'">Done</button></div>';
+      return '<div class="dash-event"><div class="dash-datebox"><strong>'+day+'</strong><span>'+mon+'</span></div><button type="button" class="dash-event-main dash-event-open" data-open-event="'+e.id+'"><div class="dash-event-title">'+escapeHTML(e.title)+'</div><div class="dash-event-meta">'+when+(e.type?' · '+escapeHTML(e.type).toUpperCase():'')+'</div></button><button class="btn green quick-done" data-done-event="'+e.id+'">Done</button></div>';
     }).join('') : '<div class="empty-state">Nothing upcoming — your calendar is clear.</div>';
+    el.querySelectorAll('[data-open-event]').forEach(b=>b.onclick=()=>{const e=state.events.find(x=>x.id===b.dataset.openEvent);if(!e)return;gotoPage('calendar');calSelectedDate=e.date;renderCalendar();renderCalDayDetail();openEventEdit(e);});
     el.querySelectorAll('[data-done-event]').forEach(b=>b.onclick=async()=>{const e=state.events.find(x=>x.id===b.dataset.doneEvent);if(e){await animateOut(b.closest('.dash-event'),'item-complete');e.done=true;haptic();await save('events',state.events);renderDashboard();}});
   }
   function renderWidgetPrayer(el){
