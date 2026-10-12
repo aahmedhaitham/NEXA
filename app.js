@@ -783,16 +783,16 @@
     renderTaskList(); renderStatbar(); showToast('Task added.');
   });
   document.getElementById('refresh-app-btn').addEventListener('click', async ()=>{
-    const btn=document.getElementById('refresh-app-btn'); btn.disabled=true; btn.textContent='Refreshing…';
+    const btn=document.getElementById('refresh-app-btn');
+    btn.disabled=true; btn.textContent='Refreshing…';
     try{
       if('serviceWorker' in navigator){
         const regs=await navigator.serviceWorker.getRegistrations();
         await Promise.all(regs.map(reg=>reg.update().catch(()=>{})));
-        const keys=await caches.keys();
-        await Promise.all(keys.filter(k=>k.startsWith('nexa-')).map(k=>caches.delete(k)));
+        for(const reg of regs){if(reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'});}
       }
-    }catch(e){ console.warn('Refresh failed',e); }
-    location.reload();
+    }catch(e){console.warn('Refresh failed',e);}
+    window.location.reload();
   });
 
   document.getElementById('habit-new-btn').addEventListener('click', ()=>{document.getElementById('habit-edit-id').value='';document.getElementById('habit-form').style.display='block';});
@@ -958,7 +958,8 @@
       if(hadController&&!window.__nexaUpdateListener){
         window.__nexaUpdateListener=true;
         navigator.serviceWorker.addEventListener('controllerchange',()=>{
-          if(!window.__nexaUpdateReloaded){window.__nexaUpdateReloaded=true;window.location.reload();}
+          const status=document.getElementById('notification-status');
+          if(status)status.textContent='Nexa update ready. Tap Refresh app to reload safely.';
         });
       }
       if(!('Notification' in window) || !('PushManager' in window)){
