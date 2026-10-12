@@ -203,7 +203,6 @@
 
   function habitDayCode(d){ const map={0:'sun',1:'mon',2:'tue',3:'wed',4:'thu',5:'fri',6:'sat'}; return map[d.getDay()]; }
   function habitStreak(h){let d=new Date();d.setHours(12,0,0,0);if(!habitIsScheduled(h,d)||!((state.habitLogs[dateKey(d)]||{})[h.id]))d.setDate(d.getDate()-1);let streak=0,guard=0;while(guard++<370){if(!habitIsScheduled(h,d)){d.setDate(d.getDate()-1);continue;}if((state.habitLogs[dateKey(d)]||{})[h.id]){streak++;d.setDate(d.getDate()-1);continue;}break;}return streak;}
-  function renderPrayerCheckin(el){const names=[['fajr','Fajr'],['dhuhr','Dhuhr'],['asr','Asr'],['maghrib','Maghrib'],['isha','Isha']],log=state.prayerLogs[todayKey()]||{};el.innerHTML='<div class="prayer-check-grid">'+names.map(([k,n])=>'<button type="button" class="prayer-check'+(log[k]?' done':'')+'" data-prayer="'+k+'"><span>'+n+'</span><b>'+(log[k]?'✓':'○')+'</b></button>').join('')+'</div><div class="prayer-check-summary">'+names.filter(([k])=>log[k]).length+' of 5 prayers checked</div>';el.querySelectorAll('[data-prayer]').forEach(btn=>btn.onclick=async()=>{const key=todayKey();if(!state.prayerLogs[key])state.prayerLogs[key]={};const id=btn.dataset.prayer;state.prayerLogs[key][id]=!state.prayerLogs[key][id];await save('prayerLogs',state.prayerLogs);renderPrayerCheckin(el);});}
   function renderCustomReminders(){}
   async function syncPushIfEnabled(){try{if('Notification'in window&&Notification.permission==='granted'){const reg=await navigator.serviceWorker.ready;await syncNexaPushSubscription(reg);}}catch(e){console.error('Reminder sync failed',e);}}
 
@@ -314,7 +313,7 @@
     renderStatbar();
     const grid = document.getElementById('widget-grid');
     grid.innerHTML = '';
-    const order = state.config.dashboardOrder.filter(id=>id!=='creatine');
+    const order = state.config.dashboardOrder.filter(id=>id!=='creatine'&&id!=='prayer');
     order.forEach(id=>{
       const def = WIDGET_DEFS[id]; if(!def) return;
       const w = document.createElement('div');
@@ -947,12 +946,25 @@
   }
   async function setupNexaNotifications(){
     const status=document.getElementById('notification-status');
-    if(!('serviceWorker' in navigator) || !('Notification' in window) || !('PushManager' in window)){
-      if(status) status.textContent='Notifications are not supported in this browser.';
+    if(!('serviceWorker' in navigator)) {
+      if(status) status.textContent='Service workers are not supported in this browser.';
       return;
     }
     try{
-      const reg=await navigator.serviceWorker.register('./service-worker.js');
+      const hadController=!!navigator.serviceWorker.controller;
+      const reg=await navigator.serviceWorker.register('./service-worker.js',{updateViaCache:'none'});
+      reg.update().catch(()=>{});
+      if(reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
+      if(hadController&&!window.__nexaUpdateListener){
+        window.__nexaUpdateListener=true;
+        navigator.serviceWorker.addEventListener('controllerchange',()=>{
+          if(!window.__nexaUpdateReloaded){window.__nexaUpdateReloaded=true;window.location.reload();}
+        });
+      }
+      if(!('Notification' in window) || !('PushManager' in window)){
+        if(status) status.textContent='App updates are enabled; notifications are not supported in this browser.';
+        return;
+      }
       const refresh=()=>{ if(status) status.textContent = Notification.permission==='granted' ? 'Notifications are enabled.' : (Notification.permission==='denied' ? 'Notifications are blocked in iPhone settings.' : 'Notifications are off.'); };
       refresh();
       if(Notification.permission==='granted') await syncNexaPushSubscription(reg);
