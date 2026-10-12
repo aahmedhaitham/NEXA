@@ -68,6 +68,7 @@
     state.prayerLogs = await safeGet('prayerLogs', {});
     state.customReminders = await safeGet('customReminders', []);
     if(state.config.settings.calendarReminderHours===undefined) state.config.settings.calendarReminderHours=24;
+    let migratedEventReminders=false;state.events.forEach(e=>{if(e.reminderHours===undefined){e.reminderHours=Number(state.config.settings.calendarReminderHours??24);migratedEventReminders=true;}});if(migratedEventReminders)await save('events',state.events);
     state.health = await safeGet('health', {steps:{}, sleep:{}, weight:[]});
     state.classSchedule = await safeGet('classSchedule', []);
     state.subjects = await safeGet('subjects', []);
@@ -852,7 +853,7 @@
   document.getElementById('ev-save').addEventListener('click', async ()=>{
     const title = document.getElementById('ev-title').value.trim();
     if(!title){ showToast('Give it a title.'); return; }
-    const editId=document.getElementById('event-edit-id').value, reminderValue=document.getElementById('ev-reminder').value, vals={title,type:document.getElementById('ev-type').value,date:document.getElementById('ev-date').value||null,time:document.getElementById('ev-time').value||'09:00',reminderHours:reminderValue==='default'?undefined:Number(reminderValue),notes:document.getElementById('ev-notes').value.trim()};
+    const editId=document.getElementById('event-edit-id').value, reminderValue=document.getElementById('ev-reminder').value, vals={title,type:document.getElementById('ev-type').value,date:document.getElementById('ev-date').value||null,time:document.getElementById('ev-time').value||'09:00',reminderHours:reminderValue==='default'?Number(state.config.settings.calendarReminderHours??24):Number(reminderValue),notes:document.getElementById('ev-notes').value.trim()};
     if(editId){const ev=state.events.find(x=>x.id===editId);if(ev)Object.assign(ev,vals);}else state.events.push({id:'ev-'+Date.now(),...vals,done:false});
     await save('events', state.events);
     document.getElementById('cal-form').style.display='none'; document.getElementById('ev-title').value=''; document.getElementById('ev-notes').value='';
