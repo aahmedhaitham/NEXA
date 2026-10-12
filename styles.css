@@ -430,3 +430,24 @@
 }
 #widget-grid .widget[data-id="habits"] .dash-habit.done{border-color:rgba(51,214,122,.45)!important;}
 #widget-grid .widget[data-id="tasks"] .dash-task.overdue{border-color:rgba(255,90,43,.45)!important;}
+
+
+/* Final dashboard surface normalization: keep Upcoming and Today rows equally dark. */
+#widget-grid .widget[data-id="upcoming"] .dash-event,
+#widget-grid .widget[data-id="classes"] .class-row,
+#widget-grid .widget[data-id="habits"] .dash-habit,
+#widget-grid .widget[data-id="tasks"] .dash-task,
+#widget-grid .widget[data-id="habits"] .dash-habit.done,
+#widget-grid .widget[data-id="tasks"] .dash-task.overdue {
+  background: rgba(20,22,27,.72) !important;
+  border-color: var(--border) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(160%) !important;
+  backdrop-filter: blur(30px) saturate(160%) !important;
+  box-shadow: none !important;
+}
+#widget-grid .widget[data-id="classes"] .class-row { border-left: 4px solid var(--gray) !important; }
+#widget-grid .widget[data-id="classes"] .class-row.lecture { border-left-color: var(--coral) !important; }
+#widget-grid .widget[data-id="classes"] .class-row.lab { border-left-color: var(--gold) !important; }
+#widget-grid .widget[data-id="classes"] .class-row.tutorial { border-left-color: var(--blue) !important; }
+#widget-grid .widget[data-id="habits"] .dash-habit.done { border-color: rgba(51,214,122,.45) !important; }
+#widget-grid .widget[data-id="tasks"] .dash-task.overdue { border-color: rgba(255,90,43,.45) !important; }
