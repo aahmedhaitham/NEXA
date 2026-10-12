@@ -363,3 +363,48 @@
   background:rgba(255,90,43,.07);
   border-color:rgba(255,90,43,.45);
 }
+
+
+/* Colored glass surfaces for Today widgets, using the same translucent treatment as Upcoming. */
+#widget-grid .widget[data-id="classes"] .class-row{
+  background:rgba(255,90,43,.075)!important;
+  border:1px solid rgba(255,255,255,.18)!important;
+  border-left:4px solid var(--gray)!important;
+  -webkit-backdrop-filter:blur(30px) saturate(160%)!important;
+  backdrop-filter:blur(30px) saturate(160%)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08)!important;
+}
+#widget-grid .widget[data-id="classes"] .class-row.lecture{
+  background:rgba(255,90,43,.09)!important;
+  border-left-color:var(--coral)!important;
+}
+#widget-grid .widget[data-id="classes"] .class-row.lab{
+  background:rgba(255,194,75,.085)!important;
+  border-left-color:var(--gold)!important;
+}
+#widget-grid .widget[data-id="classes"] .class-row.tutorial{
+  background:rgba(77,163,255,.085)!important;
+  border-left-color:var(--blue)!important;
+}
+#widget-grid .widget[data-id="habits"] .dash-habit{
+  background:rgba(77,163,255,.075)!important;
+  border-color:rgba(77,163,255,.28)!important;
+  -webkit-backdrop-filter:blur(30px) saturate(160%)!important;
+  backdrop-filter:blur(30px) saturate(160%)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08)!important;
+}
+#widget-grid .widget[data-id="habits"] .dash-habit.done{
+  background:rgba(51,214,122,.13)!important;
+  border-color:rgba(51,214,122,.48)!important;
+}
+#widget-grid .widget[data-id="tasks"] .dash-task{
+  background:rgba(255,194,75,.075)!important;
+  border-color:rgba(255,194,75,.27)!important;
+  -webkit-backdrop-filter:blur(30px) saturate(160%)!important;
+  backdrop-filter:blur(30px) saturate(160%)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08)!important;
+}
+#widget-grid .widget[data-id="tasks"] .dash-task.overdue{
+  background:rgba(255,90,43,.10)!important;
+  border-color:rgba(255,90,43,.48)!important;
+}
