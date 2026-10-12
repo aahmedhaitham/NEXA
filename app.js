@@ -40,7 +40,7 @@
   const TYPE_ICON = {workout:'dumbbell',course:'book',movie:'clapper',plan:'checklist',custom:'star'};
   function icon(name,size){ return (ICONS[name]||'').split('{{S}}').join(size||18); }
 
-  let state = {exercises:[],logs:[],events:[],config:{},nutrition:{},tasks:[],habits:[],habitLogs:{},health:{steps:{},sleep:{},weight:[]},classSchedule:[],courses:[],subjects:[],subjectItems:[]};
+  let state = {exercises:[],logs:[],events:[],config:{},nutrition:{},tasks:[],habits:[],habitLogs:{},health:{steps:{},sleep:{},weight:[]},prayerLogs:{},customReminders:[],classSchedule:[],courses:[],subjects:[],subjectItems:[]};
   let calYear, calMonth, calSelectedDate=null;
 
   async function safeGet(key, fallback){ try{ const v=localStorage.getItem('cb_'+key); return v?JSON.parse(v):fallback; }catch(e){ return fallback; } }
@@ -65,6 +65,9 @@
     state.habits = await safeGet('habits', DEFAULT_HABITS);
     state.habits.forEach(h=>{ if(!Array.isArray(h.days)||!h.days.length) h.days=['daily']; });
     state.habitLogs = await safeGet('habitLogs', {});
+    state.prayerLogs = await safeGet('prayerLogs', {});
+    state.customReminders = await safeGet('customReminders', []);
+    if(state.config.settings.calendarReminderHours===undefined) state.config.settings.calendarReminderHours=24;
     state.health = await safeGet('health', {steps:{}, sleep:{}, weight:[]});
     state.classSchedule = await safeGet('classSchedule', []);
     state.subjects = await safeGet('subjects', []);
@@ -198,6 +201,11 @@
   }
 
   function habitDayCode(d){ const map={0:'sun',1:'mon',2:'tue',3:'wed',4:'thu',5:'fri',6:'sat'}; return map[d.getDay()]; }
+  function habitStreak(h){let d=new Date();d.setHours(12,0,0,0);if(!habitIsScheduled(h,d)||!((state.habitLogs[dateKey(d)]||{})[h.id]))d.setDate(d.getDate()-1);let streak=0,guard=0;while(guard++<370){if(!habitIsScheduled(h,d)){d.setDate(d.getDate()-1);continue;}if((state.habitLogs[dateKey(d)]||{})[h.id]){streak++;d.setDate(d.getDate()-1);continue;}break;}return streak;}
+  function renderPrayerCheckin(el){const names=[['fajr','Fajr'],['dhuhr','Dhuhr'],['asr','Asr'],['maghrib','Maghrib'],['isha','Isha']],log=state.prayerLogs[todayKey()]||{};el.innerHTML='<div class="prayer-check-grid">'+names.map(([k,n])=>'<button type="button" class="prayer-check'+(log[k]?' done':'')+'" data-prayer="'+k+'"><span>'+n+'</span><b>'+(log[k]?'✓':'○')+'</b></button>').join('')+'</div><div class="prayer-check-summary">'+names.filter(([k])=>log[k]).length+' of 5 prayers checked</div>';el.querySelectorAll('[data-prayer]').forEach(btn=>btn.onclick=async()=>{const key=todayKey();if(!state.prayerLogs[key])state.prayerLogs[key]={};const id=btn.dataset.prayer;state.prayerLogs[key][id]=!state.prayerLogs[key][id];await save('prayerLogs',state.prayerLogs);renderPrayerCheckin(el);});}
+  function renderCustomReminders(){const wrap=document.getElementById('custom-reminder-list');if(!wrap)return;const items=state.customReminders.slice().sort((x,y)=>(x.date+'T'+x.time).localeCompare(y.date+'T'+y.time));wrap.innerHTML=items.length?items.map(r=>'<div class="custom-reminder-row"><div><b>'+escapeHTML(r.title)+'</b><small>'+escapeHTML(r.date)+' · '+formatHabitTime(r.time)+' · '+(r.repeat==='daily'?'Daily':r.repeat==='weekly'?'Weekly':'Once')+'</small></div><button class="btn gray small" data-delete-reminder="'+r.id+'">Delete</button></div>').join(''):'<div class="empty-state">No custom reminders yet.</div>';wrap.querySelectorAll('[data-delete-reminder]').forEach(btn=>btn.onclick=async()=>{state.customReminders=state.customReminders.filter(r=>r.id!==btn.dataset.deleteReminder);await save('customReminders',state.customReminders);renderCustomReminders();await syncPushIfEnabled();});}
+  async function syncPushIfEnabled(){try{if('Notification'in window&&Notification.permission==='granted'){const reg=await navigator.serviceWorker.ready;await syncNexaPushSubscription(reg);}}catch(e){console.error('Reminder sync failed',e);}}
+
   function habitIsScheduled(h,d=new Date()){ const days=Array.isArray(h.days)&&h.days.length?h.days:['daily']; return days.includes('daily')||days.includes(habitDayCode(d)); }
   function scheduledHabitsForDate(d=new Date()){ return state.habits.filter(h=>habitIsScheduled(h,d)); }
   function renderStatbar(){
@@ -220,7 +228,7 @@
     habits:{title:'Habits Today', render:renderWidgetHabits},
     tasks:{title:'Tasks Due Soon', render:renderWidgetTasks},
     calendar:{title:'Upcoming', render:renderWidgetCalendar},
-    prayer:{title:'Prayer Times', render:renderWidgetPrayer}
+    prayer:{title:'Prayer Times & Check-in', render:renderWidgetPrayer}
   };
   function renderWidgetTrain(el){
     const day = todayDayCode(); const cat = state.config.plan[day]||'rest';
@@ -247,7 +255,8 @@
       const label = k[0].toUpperCase()+k.slice(1);
       const color = k==='calories'?'var(--coral)':k==='protein'?'var(--blue)':k==='carbs'?'var(--gold)':'var(--purple)';
       return '<div class="nutri-row"><div class="nutri-label"><span>'+label+'</span><span class="val">'+Math.round(nut[k])+(goal>0?' / '+Math.round(goal):'')+'</span></div><div class="nutri-bar"><div class="nutri-fill" style="width:'+pct+'%;background:'+color+';"></div></div></div>';
-    }).join('');
+    }).join('')+'<button type="button" class="btn secondary full dash-nutrition-add" id="dash-nutrition-add">+ Add nutrition</button>';
+    el.querySelector('#dash-nutrition-add').onclick=()=>{gotoPage('health');gotoSubtab('health','nutrition');};
   }
   function formatHabitTime(value){
     if(!value) return '';
@@ -289,8 +298,7 @@
   function renderWidgetPrayer(el){
     const {times,order,nextKey,nextDiff} = getNextPrayer();
     const h=Math.floor(nextDiff), m=Math.round((nextDiff-h)*60);
-    el.innerHTML = '<div class="prayer-list">' + order.map(([k,l])=>'<div class="prayer-item'+(k===nextKey?' next':'')+'"><div class="pname">'+l+'</div><div class="ptime">'+fmtTime(times[k])+'</div></div>').join('') + '</div>' +
-      '<p style="text-align:center;margin-top:8px;color:var(--coral);font-weight:700;">Next: '+order.find(o=>o[0]===nextKey)[1]+' in '+h+'h '+m+'m</p>';
+    el.innerHTML = '<div class="prayer-list">' + order.map(([k,l])=>'<div class="prayer-item'+(k===nextKey?' next':'')+'"><div class="pname">'+l+'</div><div class="ptime">'+fmtTime(times[k])+'</div></div>').join('') + '</div><p style="text-align:center;margin-top:8px;color:var(--coral);font-weight:700;">Next: '+order.find(o=>o[0]===nextKey)[1]+' in '+h+'h '+m+'m</p><h4 class="prayer-check-title">Did you pray?</h4><div id="dash-prayer-checkin"></div>';renderPrayerCheckin(el.querySelector('#dash-prayer-checkin'));
   }
   document.addEventListener('dblclick', e=>{ if(!e.target.closest('input,textarea,select,button,a')) e.preventDefault(); }, {passive:false});
 
@@ -458,22 +466,9 @@
   function renderHabitGrid(){
     const wrap = document.getElementById('habit-grid'); wrap.innerHTML = '';
     if(!state.habits.length){ wrap.innerHTML='<p>No habits yet.</p>'; return; }
-    const days = []; for(let i=13;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); days.push(new Date(d)); }
-    state.habits.forEach(h=>{
-      const row = document.createElement('div'); row.className='heat-row';
-      let streak=0;
-      for(let i=days.length-1;i>=0;i--){
-        if(!habitIsScheduled(h,days[i])) continue;
-        if((state.habitLogs[dateKey(days[i])]||{})[h.id]) streak++; else break;
-      }
-      const cellsHTML = days.map(d=>{
-        const key=dateKey(d), scheduled=habitIsScheduled(h,d), on=!!((state.habitLogs[key]||{})[h.id]);
-        return '<div class="heat-cell'+(on?' on':'')+(scheduled?'':' muted')+'" data-date="'+key+'" data-habit="'+h.id+'"'+(scheduled?'':' aria-hidden="true"')+'></div>';
-      }).join('');
-      const scheduleLabel = (Array.isArray(h.days)&&h.days.length&&h.days[0]!=='daily') ? h.days.map(x=>x.toUpperCase()).join(' · ') : 'Every day';
-      row.innerHTML = '<div class="heat-name">'+escapeHTML(h.name)+(h.time?'<div style="font-size:10px;color:var(--muted);margin-top:2px;">'+formatHabitTime(h.time)+'</div>':'')+'<div style="font-size:9px;color:var(--muted);margin-top:2px;">'+scheduleLabel+'</div></div><div class="heat-cells">'+cellsHTML+'</div><div class="heat-streak">'+streak+'d streak</div><div class="item-actions"><button class="btn gray small" data-edit-habit="'+h.id+'">Edit</button><button class="btn gray small" data-del-habit="'+h.id+'">Delete</button></div>';
-      wrap.appendChild(row);
-    });
+    const week=[];for(let i=6;i>=0;i--){const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()-i);week.push(d);}const month=[];for(let i=29;i>=0;i--){const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()-i);month.push(d);}
+    state.habits.forEach(h=>{const row=document.createElement('div');row.className='habit-progress-card';const streak=habitStreak(h);const dayCells=week.map(d=>{const key=dateKey(d),scheduled=habitIsScheduled(h,d),on=!!((state.habitLogs[key]||{})[h.id]);return '<button type="button" class="habit-day'+(on?' on':'')+(!scheduled?' muted':'')+(key===todayKey()?' today':'')+'" data-date="'+key+'" data-habit="'+h.id+'" '+(!scheduled?'disabled':'')+'><span>'+['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]+'</span><b>'+(on?'✓':d.getDate())+'</b></button>';}).join('');const monthCells=month.map(d=>{const key=dateKey(d),scheduled=habitIsScheduled(h,d),on=!!((state.habitLogs[key]||{})[h.id]);return '<button type="button" title="'+key+'" class="habit-month-day'+(on?' on':'')+(!scheduled?' muted':'')+'" data-date="'+key+'" data-habit="'+h.id+'" '+(!scheduled?'disabled':'')+'>'+d.getDate()+'</button>';}).join('');const scheduleLabel=(Array.isArray(h.days)&&h.days.length&&h.days[0]!=='daily')?h.days.map(x=>x.toUpperCase()).join(' · '):'Every day';row.innerHTML='<div class="habit-progress-head"><div class="heat-name">'+escapeHTML(h.name)+(h.time?'<div class="habit-time">'+formatHabitTime(h.time)+'</div>':'')+'<div class="habit-schedule">'+scheduleLabel+'</div></div><div class="heat-streak"><b>'+streak+'</b><span>day streak</span></div></div><div class="habit-week">'+dayCells+'</div><button type="button" class="btn ghost small habit-history-toggle" data-history="'+h.id+'">View 30-day history</button><div class="habit-month" data-month="'+h.id+'" hidden>'+monthCells+'</div><div class="item-actions"><button class="btn gray small" data-edit-habit="'+h.id+'">Edit</button><button class="btn gray small" data-del-habit="'+h.id+'">Delete</button></div>';wrap.appendChild(row);});
+    wrap.querySelectorAll('[data-history]').forEach(btn=>btn.onclick=()=>{const box=wrap.querySelector('[data-month="'+btn.dataset.history+'"]');box.hidden=!box.hidden;btn.textContent=box.hidden?'View 30-day history':'Hide 30-day history';});
     wrap.querySelectorAll('[data-edit-habit]').forEach(btn=>btn.addEventListener('click',()=>{
       const h=state.habits.find(x=>x.id===btn.dataset.editHabit);if(!h)return;
       document.getElementById('habit-edit-id').value=h.id;document.getElementById('habit-in-name').value=h.name;document.getElementById('habit-in-time').value=h.time||'';
@@ -488,12 +483,12 @@
       await save('habits',state.habits);await save('habitLogs',state.habitLogs);renderHabitGrid();renderStatbar();
       offerUndo('Habit deleted',async()=>{state.habits.splice(Math.min(idx,state.habits.length),0,copy);Object.entries(history).forEach(([d,v])=>{if(!state.habitLogs[d])state.habitLogs[d]={};state.habitLogs[d][hid]=v;});await save('habits',state.habits);await save('habitLogs',state.habitLogs);renderHabitGrid();renderStatbar();});
     }));
-    wrap.querySelectorAll('.heat-cell').forEach(c=>c.addEventListener('click', async ()=>{
+    wrap.querySelectorAll('.habit-day,.habit-month-day').forEach(c=>c.addEventListener('click', async ()=>{
       if(c.classList.contains('muted')) return;
       const d=c.dataset.date, hid=c.dataset.habit;
       if(!state.habitLogs[d]) state.habitLogs[d]={};
       state.habitLogs[d][hid] = !state.habitLogs[d][hid];
-      await save('habitLogs', state.habitLogs); renderHabitGrid(); renderStatbar();
+      await save('habitLogs', state.habitLogs); renderHabitGrid(); renderStatbar(); renderDashboard();
     }));
   }
   function renderNutritionPage(){
@@ -544,7 +539,7 @@
       grid.appendChild(cell);
     }
   }
-  function openEventEdit(ev){document.getElementById('event-edit-id').value=ev.id;document.getElementById('ev-title').value=ev.title;document.getElementById('ev-type').value=ev.type;document.getElementById('ev-date').value=ev.date||'';document.getElementById('ev-notes').value=ev.notes||'';document.getElementById('cal-form').style.display='block';document.getElementById('ev-title').focus();}
+  function openEventEdit(ev){document.getElementById('event-edit-id').value=ev.id;document.getElementById('ev-title').value=ev.title;document.getElementById('ev-type').value=ev.type;document.getElementById('ev-date').value=ev.date||'';document.getElementById('ev-time').value=ev.time||'09:00';document.getElementById('ev-reminder').value=ev.reminderHours===undefined?'default':String(ev.reminderHours);document.getElementById('ev-notes').value=ev.notes||'';document.getElementById('cal-form').style.display='block';document.getElementById('ev-title').focus();}
   function eventRow(ev){
     const row = document.createElement('div'); row.className='task-row';
     const check = document.createElement('button'); check.className='checkbtn'+(ev.done?' checked':''); check.textContent=ev.done?'\u2713':'';
@@ -851,19 +846,22 @@
 
   document.getElementById('cal-prev').addEventListener('click', ()=>{ calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); });
   document.getElementById('cal-next').addEventListener('click', ()=>{ calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendar(); });
-  document.getElementById('cal-add-btn').addEventListener('click', ()=>{ document.getElementById('cal-form').style.display='block'; document.getElementById('ev-date').value=calSelectedDate||''; document.getElementById('ev-title').focus(); });
+  document.getElementById('cal-add-btn').addEventListener('click', ()=>{ document.getElementById('cal-form').style.display='block'; document.getElementById('event-edit-id').value='';document.getElementById('ev-date').value=calSelectedDate||todayKey();document.getElementById('ev-time').value='09:00';document.getElementById('ev-reminder').value='default';document.getElementById('ev-title').focus(); });
   document.getElementById('ev-cancel').addEventListener('click', ()=>{ document.getElementById('cal-form').style.display='none'; document.getElementById('ev-title').value=''; document.getElementById('ev-notes').value=''; document.getElementById('event-edit-id').value=''; });
   document.getElementById('ev-save').addEventListener('click', async ()=>{
     const title = document.getElementById('ev-title').value.trim();
     if(!title){ showToast('Give it a title.'); return; }
-    const editId=document.getElementById('event-edit-id').value, vals={title,type:document.getElementById('ev-type').value,date:document.getElementById('ev-date').value||null,notes:document.getElementById('ev-notes').value.trim()};
+    const editId=document.getElementById('event-edit-id').value, reminderValue=document.getElementById('ev-reminder').value, vals={title,type:document.getElementById('ev-type').value,date:document.getElementById('ev-date').value||null,time:document.getElementById('ev-time').value||'09:00',reminderHours:reminderValue==='default'?undefined:Number(reminderValue),notes:document.getElementById('ev-notes').value.trim()};
     if(editId){const ev=state.events.find(x=>x.id===editId);if(ev)Object.assign(ev,vals);}else state.events.push({id:'ev-'+Date.now(),...vals,done:false});
     await save('events', state.events);
     document.getElementById('cal-form').style.display='none'; document.getElementById('ev-title').value=''; document.getElementById('ev-notes').value='';
-    renderAllCalendarBits(); showToast('Added.');
+    renderAllCalendarBits(); await syncPushIfEnabled(); showToast('Saved.');
   });
 
+  document.getElementById('calendar-reminder-default').addEventListener('change',()=>{state.config.settings.calendarReminderHours=Number(document.getElementById('calendar-reminder-default').value);});
+  document.getElementById('custom-reminder-add').addEventListener('click',async()=>{const title=document.getElementById('custom-reminder-title').value.trim(),date=document.getElementById('custom-reminder-date').value,time=document.getElementById('custom-reminder-time').value,repeat=document.getElementById('custom-reminder-repeat').value;if(!title||!date||!time){showToast('Add a reminder, date, and time.');return;}state.customReminders.push({id:'rem-'+Date.now(),title,date,time,repeat,enabled:true});await save('customReminders',state.customReminders);document.getElementById('custom-reminder-title').value='';renderCustomReminders();await syncPushIfEnabled();showToast('Reminder saved.');});
   document.getElementById('save-settings-btn').addEventListener('click', async ()=>{
+    state.config.settings.calendarReminderHours=Number(document.getElementById('calendar-reminder-default').value);
     state.config.settings.notifications={};
     state.config.settings.notificationLead={};
     ['classes','habits','prayer','events'].forEach(k=>{state.config.settings.notifications[k]=document.getElementById('notify-'+k).checked;state.config.settings.notificationLead[k]=parseInt(document.getElementById('notify-'+k+'-lead').value,10)||0;});
@@ -874,15 +872,15 @@
         await syncNexaPushSubscription(reg);
       }
     }catch(e){ console.error('Reminder sync failed',e); }
-    showToast('Saved.');
+    await syncPushIfEnabled();renderCustomReminders();showToast('Saved.');
   });
   document.getElementById('reset-btn').addEventListener('click', async ()=>{
     if(!await nexaConfirm('Reset all data?','This permanently deletes all Nexa data on this device.','Reset everything')) return;
     localStorage.clear();
     state = {exercises:JSON.parse(JSON.stringify(DEFAULT_EXERCISES)), logs:[], events:[], nutrition:{}, tasks:[], habits:JSON.parse(JSON.stringify(DEFAULT_HABITS)), habitLogs:{},
-      classSchedule:[], subjects:[], subjectItems:[], health:{steps:{},sleep:{},weight:[]},
-      config:{plan:Object.assign({},DEFAULT_PLAN), settings:{notifications:{classes:true,habits:true,prayer:true,events:true},notificationLead:{classes:15,habits:0,prayer:0,events:0}}, dashboardOrder:['classes','train','nutrition','habits','tasks','calendar','prayer']}};
-    for(const k of ['exercises','logs','events','nutrition','tasks','habits','habitLogs','classSchedule','subjects','subjectItems','health','config']) await save(k, state[k]);
+      classSchedule:[], subjects:[], subjectItems:[], health:{steps:{},sleep:{},weight:[]},prayerLogs:{},customReminders:[],
+      config:{plan:Object.assign({},DEFAULT_PLAN), settings:{calendarReminderHours:24,notifications:{classes:true,habits:true,prayer:true,events:true},notificationLead:{classes:15,habits:0,prayer:0,events:0}}, dashboardOrder:['classes','train','nutrition','habits','tasks','calendar','prayer']}};
+    for(const k of ['exercises','logs','events','nutrition','tasks','habits','habitLogs','prayerLogs','customReminders','classSchedule','subjects','subjectItems','health','config']) await save(k, state[k]);
     showToast('All data reset.'); gotoPage('today');
   });
 
@@ -891,6 +889,7 @@
     const now = new Date(); calYear=now.getFullYear(); calMonth=now.getMonth();
     const ns=state.config.settings.notifications;
     ['classes','tasks','habits','prayer','events'].forEach(k=>{const el=document.getElementById('notify-'+k);if(el)el.checked=ns[k]!==false;const lead=document.getElementById('notify-'+k+'-lead');if(lead)lead.value=String((state.config.settings.notificationLead||{})[k]||0);});
+    document.getElementById('calendar-reminder-default').value=String(state.config.settings.calendarReminderHours??24);document.getElementById('custom-reminder-date').value=todayKey();renderCustomReminders();
     renderTabbar();
     wireSubtabs();
     document.getElementById('loading').style.display='none';
@@ -926,11 +925,13 @@
         reminderData:{
           tasks:JSON.parse(localStorage.getItem('cb_tasks')||'[]'),
           events:JSON.parse(localStorage.getItem('cb_events')||'[]'),
+          customReminders:JSON.parse(localStorage.getItem('cb_customReminders')||'[]'),
           habits:JSON.parse(localStorage.getItem('cb_habits')||'[]'),
           habitLogs:JSON.parse(localStorage.getItem('cb_habitLogs')||'{}'),
           classes:JSON.parse(localStorage.getItem('cb_classSchedule')||'[]'),
           notificationSettings:(JSON.parse(localStorage.getItem('cb_config')||'{}').settings||{}).notifications||{classes:true,tasks:true,habits:true,prayer:true,events:true},
-          notificationLead:(JSON.parse(localStorage.getItem('cb_config')||'{}').settings||{}).notificationLead||{classes:15,tasks:0,habits:0,prayer:0,events:0}
+          notificationLead:(JSON.parse(localStorage.getItem('cb_config')||'{}').settings||{}).notificationLead||{classes:15,tasks:0,habits:0,prayer:0,events:0},
+          calendarReminderHours:(JSON.parse(localStorage.getItem('cb_config')||'{}').settings||{}).calendarReminderHours??24
         }
       })
     });
