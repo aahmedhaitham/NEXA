@@ -295,7 +295,7 @@
       const day=d.toLocaleDateString('en-US',{day:'numeric'});
       const mon=d.toLocaleDateString('en-US',{month:'short'}).toUpperCase();
       const when=e.date===todayKey()?'TODAY':d.toLocaleDateString('en-US',{weekday:'short'}).toUpperCase();
-      return '<div class="dash-event dash-event-clickable" role="button" tabindex="0" data-open-event="'+e.id+'"><div class="dash-datebox"><strong>'+day+'</strong><span>'+mon+'</span></div><div class="dash-event-main"><div class="dash-event-title">'+escapeHTML(e.title)+'</div><div class="dash-event-meta">'+when+(e.type?' · '+escapeHTML(e.type).toUpperCase():'')+'</div></div></div>';
+      return '<div class="dash-event dash-event-clickable" role="button" tabindex="0" data-open-event="'+e.id+'"><div class="dash-datebox"><strong>'+day+'</strong><span>'+mon+'</span></div><div class="dash-event-main"><div class="dash-event-title">'+escapeHTML(e.title)+'</div><div class="dash-event-meta">'+when+(e.type?' · '+(e.type==='custom'?'OTHER':escapeHTML(e.type).toUpperCase()):'')+'</div></div></div>';
     }).join('') : '<div class="empty-state">Nothing upcoming — your calendar is clear.</div>';
     const openEvent=b=>{const e=state.events.find(x=>x.id===b.dataset.openEvent);if(!e)return;gotoPage('calendar');calSelectedDate=e.date;renderCalendar();renderCalDayDetail();openEventEdit(e);};
     el.querySelectorAll('[data-open-event]').forEach(b=>{b.onclick=()=>openEvent(b);b.onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();openEvent(b);}};});
