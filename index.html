@@ -145,7 +145,7 @@
       </div>
 
       <div class="subpage" data-group="health" id="health-sub-habits">
-        <div class="row" style="margin-bottom:12px;"><p style="margin:0;">Daily check-ins and streaks.</p>
+        <div class="row" style="margin-bottom:12px;"><p style="margin:0;">Weekly progress, monthly history, and streaks.</p>
           <button class="btn small" id="habit-new-btn">+ New habit</button></div>
         <div class="card" id="habit-form" style="display:none;"><input type="hidden" id="habit-edit-id">
           <div class="field"><label>Habit name</label><input type="text" id="habit-in-name" placeholder="e.g. Read 10 pages"></div>
@@ -191,6 +191,7 @@
                 <option value="workout">Workout</option><option value="custom">Other</option></select></div>
               <div class="field"><label>Date</label><input type="date" id="ev-date" required></div>
             </div>
+            <div class="grid2"><div class="field"><label>Time</label><input type="time" id="ev-time" value="09:00"></div><div class="field"><label>Reminder</label><select id="ev-reminder"><option value="default">Use settings default</option><option value="24">24 hours before</option><option value="12">12 hours before</option><option value="3">3 hours before</option><option value="1">1 hour before</option><option value="0">Off</option></select></div></div>
             <div class="field"><label>Notes</label><textarea id="ev-notes" rows="2"></textarea></div>
             <div class="grid2"><button class="btn gray" id="ev-cancel">Cancel</button><button class="btn secondary" id="ev-save">Save</button></div>
           </div>
@@ -223,6 +224,9 @@
             </div>
             <div class="grid2"><button class="btn secondary" id="enable-notifications-btn">Enable notifications</button><button class="btn green" id="save-settings-btn">Save</button></div>
           </div>
+          <div class="card">
+            <h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Calendar reminders</h3><div class="field"><label>Default reminder for new events</label><select id="calendar-reminder-default"><option value="0">Off</option><option value="1">1 hour before</option><option value="3">3 hours before</option><option value="12">12 hours before</option><option value="24">24 hours before</option></select></div><p style="font-size:11px;color:var(--muted);">Existing events keep their own choice. New events use this default.</p></div>
+          <div class="card"><h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Custom reminders</h3><div class="field"><label>Reminder</label><input id="custom-reminder-title" placeholder="e.g. Bring my charger"></div><div class="grid2"><div class="field"><label>Date</label><input id="custom-reminder-date" type="date" required></div><div class="field"><label>Time</label><input id="custom-reminder-time" type="time" value="09:00" required></div></div><div class="field"><label>Repeat</label><select id="custom-reminder-repeat"><option value="none">Does not repeat</option><option value="daily">Daily</option><option value="weekly">Weekly</option></select></div><button class="btn secondary full" id="custom-reminder-add">+ Add reminder</button><div id="custom-reminder-list" style="margin-top:10px;"></div></div>
           <div class="card">
             <h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Nutrition goals</h3>
             <div class="grid2">
