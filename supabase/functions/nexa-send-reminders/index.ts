@@ -43,12 +43,7 @@ Deno.serve(async(req:Request)=>{
     const hours=e.reminderHours===undefined?(Number(rd.calendarReminderHours??24)):Number(e.reminderHours);
     if(hours>0&&dueNow(e.date,e.time||"09:00",hours,p))add(p.date+"|event|"+e.id+"|"+e.date,"Upcoming: "+e.title,(e.type||"Calendar event")+" · "+e.date+" at "+(e.time||"09:00"));
    }
-   for(const r of rd.customReminders||[]){
-    if(r.enabled===false||!r.date||!r.time)continue;
-    const today=dayNumber(p.date),anchor=dayNumber(r.date),delta=today-anchor;
-    const occurs=delta===0||(r.repeat==="daily"&&delta>0)||(r.repeat==="weekly"&&delta>=0&&delta%7===0);
-    if(occurs&&dueNow(p.date,r.time,0,p))add(p.date+"|custom|"+r.id,"Reminder: "+r.title,"Your custom reminder is due.");
-   }
+
    if(ns.habits!==false){
     const logs=(rd.habitLogs||{})[p.date]||{}, habits=rd.habits||[];
     const scheduled=(h:any)=>{const days=Array.isArray(h.days)&&h.days.length?h.days:["daily"];return days.includes("daily")||days.includes(p.day);};
