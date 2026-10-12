@@ -4,6 +4,9 @@ import webpush from "npm:web-push@3.6.7";
 const PUBLIC="BN7vQcBHEU01MVVBFp-wrTsS3AcVdBDLYwRxT2x34JDx7E18sssb4dM1Nqd9M8RQW4SYAojthWs1pRSsl1cnxlE";
 const LAT=30.0444,LNG=31.2357;
 const min=(s:string)=>{const [h,m]=String(s||"00:00").split(":").map(Number);return h*60+m};
+const dateMinutes=(date:string,time:string)=>{const [y,mo,d]=date.split("-").map(Number),[h,m]=String(time||"09:00").split(":").map(Number);return Date.UTC(y,mo-1,d,h,m)/60000};
+const dayNumber=(date:string)=>{const [y,mo,d]=date.split("-").map(Number);return Math.floor(Date.UTC(y,mo-1,d)/86400000)};
+const dueNow=(date:string,time:string,hours:number,p:any)=>{const trigger=dateMinutes(date,time)-hours*60,now=dateMinutes(p.date,p.clock);const diff=now-trigger;return diff>=0&&diff<=20};
 function parts(tz:string){
  const a=new Intl.DateTimeFormat("en-CA",{timeZone:tz,year:"numeric",month:"2-digit",day:"2-digit",weekday:"short",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date());
  const g=(x:string)=>a.find(p=>p.type===x)?.value||"";
@@ -35,7 +38,17 @@ Deno.serve(async(req:Request)=>{
   if(force)add(p.date+"|test","Nexa test notification","Background Web Push is working.");
   if(!force){
    if(ns.classes!==false) for(const c of rd.classes||[]){if(c.day==="daily"||c.day===p.day){const st=min(c.start),n=Number(lead.classes||0),at=st-n;if(now>=at&&now<=at+20)add(p.date+"|class|"+c.id,n?"Class in "+n+" minutes":"Class now",c.subject+(c.room?" · "+c.room:""));}}
-   if(ns.events!==false) for(const e of rd.events||[]){if(!e.done&&e.date===p.date&&now>=540-Number(lead.events||0))add(p.date+"|event|"+e.id,"Today: "+e.title,e.type||"Calendar event");}
+   if(ns.events!==false) for(const e of rd.events||[]){
+    if(e.done||!e.date)continue;
+    const hours=e.reminderHours===undefined?(Number(rd.calendarReminderHours??24)):Number(e.reminderHours);
+    if(hours>0&&dueNow(e.date,e.time||"09:00",hours,p))add(p.date+"|event|"+e.id+"|"+e.date,"Upcoming: "+e.title,(e.type||"Calendar event")+" · "+e.date+" at "+(e.time||"09:00"));
+   }
+   for(const r of rd.customReminders||[]){
+    if(r.enabled===false||!r.date||!r.time)continue;
+    const today=dayNumber(p.date),anchor=dayNumber(r.date),delta=today-anchor;
+    const occurs=delta===0||(r.repeat==="daily"&&delta>0)||(r.repeat==="weekly"&&delta>=0&&delta%7===0);
+    if(occurs&&dueNow(p.date,r.time,0,p))add(p.date+"|custom|"+r.id,"Reminder: "+r.title,"Your custom reminder is due.");
+   }
    if(ns.habits!==false){
     const logs=(rd.habitLogs||{})[p.date]||{}, habits=rd.habits||[];
     const scheduled=(h:any)=>{const days=Array.isArray(h.days)&&h.days.length?h.days:["daily"];return days.includes("daily")||days.includes(p.day);};
