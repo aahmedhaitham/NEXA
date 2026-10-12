@@ -365,10 +365,6 @@
       document.querySelectorAll('#log-cat-picker .exercise-chip').forEach(b=>b.classList.toggle('active', b.dataset.cat===match.category));
     }
   });
-  document.querySelectorAll('#log-cat-picker .exercise-chip').forEach(btn=>btn.addEventListener('click', ()=>{
-    selectedLogCategory = btn.dataset.cat;
-    document.querySelectorAll('#log-cat-picker .exercise-chip').forEach(b=>b.classList.toggle('active', b===btn));
-  }));
   document.getElementById('log-save-btn').addEventListener('click', async ()=>{
     const name = document.getElementById('log-in-name').value.trim();
     const w = parseFloat(document.getElementById('log-in-weight').value);
@@ -569,16 +565,48 @@
   }
   function renderAllCalendarBits(){ renderCalendar(); renderCalDayDetail(); }
 
+  function getWorkoutCategories(){
+    const custom=Array.isArray(state.config.workoutCategories)?state.config.workoutCategories:[];
+    return Array.from(new Set(['push','pull','legs',...custom].map(c=>String(c||'').trim()).filter(c=>c&&c.toLowerCase()!=='rest')));
+  }
+  function renderWorkoutCategoryPicker(){
+    const picker=document.getElementById('log-cat-picker'); if(!picker)return;
+    const current=selectedLogCategory;
+    picker.innerHTML='';
+    getWorkoutCategories().forEach(cat=>{
+      const btn=document.createElement('button');btn.type='button';btn.className='exercise-chip';btn.dataset.cat=cat;
+      btn.textContent=cat.charAt(0).toUpperCase()+cat.slice(1);
+      btn.classList.toggle('active',current===cat);
+      btn.onclick=()=>{selectedLogCategory=cat;picker.querySelectorAll('.exercise-chip').forEach(b=>b.classList.toggle('active',b===btn));};
+      picker.appendChild(btn);
+    });
+  }
   function renderPlanEditor(){
     const wrap = document.getElementById('plan-days'); wrap.innerHTML='';
+    const categories=getWorkoutCategories();
     DAYS.forEach(day=>{
       const row = document.createElement('div'); row.className='row'; row.style.padding='8px 0'; row.style.borderBottom='1px solid var(--border)';
       const label = document.createElement('span'); label.textContent = DAY_LABELS[day]; label.style.fontWeight='600'; label.style.fontSize='13px';
-      const sel = document.createElement('select'); sel.style.width='130px';
-      ['push','pull','legs','rest'].forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c[0].toUpperCase()+c.slice(1); if(state.config.plan[day]===c)o.selected=true; sel.appendChild(o); });
-      sel.onchange = async ()=>{ state.config.plan[day]=sel.value; await save('config', state.config); };
+      const sel = document.createElement('select'); sel.style.width='150px';
+      [...categories,'rest'].forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c==='rest'?'Rest':c.charAt(0).toUpperCase()+c.slice(1); if((state.config.plan[day]||'rest')===c)o.selected=true; sel.appendChild(o); });
+      sel.onchange = async ()=>{ state.config.plan[day]=sel.value; await save('config', state.config); renderDashboard(); };
       row.appendChild(label); row.appendChild(sel); wrap.appendChild(row);
     });
+    const customWrap=document.createElement('div');customWrap.style.marginTop='14px';
+    customWrap.innerHTML='<label style="display:block;margin-bottom:6px;font-size:12px;color:var(--muted);">Custom workout splits</label><div style="display:flex;gap:8px;"><input id="workout-category-input" type="text" maxlength="24" placeholder="e.g. Upper, Lower, Arms" style="min-width:0;flex:1;"><button type="button" class="btn small" id="workout-category-add">Add</button></div><p style="font-size:11px;color:var(--muted);margin-top:6px;">Add your own split names; they’ll appear in the weekly schedule and workout logger.</p><div id="workout-category-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>';
+    wrap.appendChild(customWrap);
+    const list=customWrap.querySelector('#workout-category-list');
+    categories.filter(c=>!['push','pull','legs'].includes(c.toLowerCase())).forEach(cat=>{const chip=document.createElement('span');chip.className='exercise-chip';chip.textContent=cat;list.appendChild(chip);});
+    const addCategory=async()=>{
+      const input=customWrap.querySelector('#workout-category-input'), name=input.value.trim().replace(/\s+/g,' ');
+      if(!name)return;
+      if(name.toLowerCase()==='rest'||categories.some(c=>c.toLowerCase()===name.toLowerCase())){showToast('That workout split already exists.');return;}
+      state.config.workoutCategories=[...(state.config.workoutCategories||[]),name];
+      await save('config',state.config);renderPlanEditor();renderWorkoutCategoryPicker();showToast('Workout split added.');
+    };
+    customWrap.querySelector('#workout-category-add').onclick=addCategory;
+    customWrap.querySelector('#workout-category-input').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addCategory();}});
+    renderWorkoutCategoryPicker();
   }
 
   function renderSubjectsPage(){
