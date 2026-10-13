@@ -401,3 +401,22 @@
 .workout-category-chip>span{overflow-wrap:anywhere}
 .workout-category-remove{display:inline-flex;align-items:center;justify-content:center;width:23px;height:23px;flex:0 0 23px;border:0;border-radius:50%;background:rgba(255,255,255,.07);color:var(--muted);font-size:18px;line-height:1;cursor:pointer}
 .workout-category-remove:hover,.workout-category-remove:focus-visible{background:rgba(255,59,92,.16);color:var(--coral);outline:none}
+
+
+/* Settings as a tidy expandable list */
+#settings-sub-general .settings-list{display:flex;flex-direction:column;gap:9px;}
+#settings-sub-general .settings-section{min-width:0;border:1px solid var(--border);border-radius:14px;background:var(--panel);overflow:hidden;}
+#settings-sub-general .settings-section>summary{list-style:none;display:flex;align-items:center;gap:12px;min-height:68px;padding:13px 15px;cursor:pointer;user-select:none;-webkit-user-select:none;}
+#settings-sub-general .settings-section>summary::-webkit-details-marker{display:none;}
+.settings-section-icon{width:36px;height:36px;flex:0 0 36px;display:flex;align-items:center;justify-content:center;border-radius:11px;background:rgba(255,255,255,.055);color:var(--coral);font-size:19px;font-weight:700;}
+.settings-section-label{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px;}
+.settings-section-label strong{font-size:14px;font-weight:750;color:var(--ink);}
+.settings-section-label small{font-size:11px;line-height:1.35;color:var(--muted);font-weight:500;}
+.settings-chevron{font-size:24px;line-height:1;color:var(--muted);transition:transform .18s ease;}
+.settings-section[open]>summary{border-bottom:1px solid var(--border);}
+.settings-section[open] .settings-chevron{transform:rotate(90deg);color:var(--coral);}
+.settings-section-content{padding:14px 15px 15px;}
+.settings-section-content>p{font-size:12px;color:var(--muted);margin:0 0 12px;line-height:1.45;}
+.settings-section-content .notify-list{margin:0 0 14px;}
+.settings-danger .settings-section-icon{color:#ff6b6b;background:rgba(192,57,43,.12);}
+@media(max-width:520px){#settings-sub-general .settings-section>summary{min-height:64px;padding:12px;gap:10px}.settings-section-icon{width:34px;height:34px;flex-basis:34px}.settings-section-content{padding:12px}.settings-section-label strong{font-size:13.5px}}
