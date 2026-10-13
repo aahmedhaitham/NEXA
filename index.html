@@ -206,11 +206,6 @@
     
     <section class="page" id="page-settings">
       <div class="page-head"><div><h1>Settings</h1></div></div>
-      <div class="subtabs" id="settings-subtabs">
-        <button class="subtab active" data-sub="general">General</button>
-        <button class="subtab" data-sub="classes">Classes</button>
-      </div>
-
       <div class="subpage active" data-group="settings" id="settings-sub-general">
         <div class="settings-list">
           <details class="settings-section">
@@ -226,7 +221,7 @@
             </div>
           </details>
           <details class="settings-section">
-            <summary><span class="settings-section-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/><circle cx="17" cy="16" r="3"/></svg></span><span class="settings-section-label"><strong>Nutrition goals</strong><small>Daily calorie and macro targets</small></span><span class="settings-chevron">›</span></summary>
+            <summary><span class="settings-section-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/><path d="M16.5 7.5 21 3"/></svg></span><span class="settings-section-label"><strong>Nutrition goals</strong><small>Daily calorie and macro targets</small></span><span class="settings-chevron">›</span></summary>
             <div class="settings-section-content">
               <div class="grid2">
                 <div class="field"><label>Calories</label><input type="number" id="goal-cal" placeholder="2200"></div>
@@ -242,7 +237,7 @@
             <div class="settings-section-content"><div id="plan-days"></div></div>
           </details>
           <button type="button" class="settings-action-button" id="refresh-app-btn">
-            <span class="settings-section-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5"/><path d="M4 17v-5h5"/><path d="M5.6 9A7 7 0 0 1 17 5l3 7M4 12l3 7a7 7 0 0 0 11.4-4"/></svg></span>
+            <span class="settings-section-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11"/><path d="m7 9 5 5 5-5"/><path d="M5 16v4h14v-4"/></svg></span>
             <span class="settings-section-label"><strong>App update</strong><small>Tap to refresh Nexa and load the latest version</small></span><span class="settings-action-arrow">›</span>
           </button>
           <button type="button" class="settings-action-button settings-reset-action" id="reset-btn">
@@ -252,7 +247,8 @@
         </div>
       </div>
 
-      <div class="subpage" data-group="settings" id="settings-sub-classes">
+      <div class="settings-classes-section">
+        <h2 class="settings-classes-heading">Classes</h2>
         <div class="row" style="margin-bottom:12px;"><p style="margin:0;">Your weekly lecture and lab schedule.</p>
           <button class="btn small" id="class-new-btn">+ Add class</button></div>
         <div class="card" id="class-form" style="display:none;"><input type="hidden" id="class-edit-id">
