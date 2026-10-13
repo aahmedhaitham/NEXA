@@ -813,7 +813,44 @@
         state.subjects=state.subjects.filter(x=>x.id!==s.id);state.subjectItems=state.subjectItems.filter(x=>x.subjectId!==s.id);
         await save('subjects',state.subjects);await save('subjectItems',state.subjectItems);renderSubjectsPage();renderStatbar();
       };
-      const subjectGrip=iconButton('Drag to reorder subject','⠿');subjectGrip.classList.add('subject-list-drag-handle');subjectGrip.addEventListener('pointerdown',e=>{if(e.button!==0&&e.pointerType==='mouse')return;e.preventDefault();const startY=e.clientY;let moved=false;const move=ev=>{if(Math.abs(ev.clientY-startY)>5)moved=true;if(!moved)return;const target=document.elementFromPoint(ev.clientX,ev.clientY);const targetCard=target&&target.closest('.subject-card');document.querySelectorAll('.subject-card.subject-card-drop').forEach(n=>n.classList.remove('subject-card-drop'));if(targetCard&&targetCard!==card)targetCard.classList.add('subject-card-drop');};const finish=async ev=>{document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',finish);document.removeEventListener('pointercancel',finish);document.querySelectorAll('.subject-card.subject-card-drop').forEach(n=>n.classList.remove('subject-card-drop'));if(!moved)return;const target=document.elementFromPoint(ev.clientX,ev.clientY);const targetCard=target&&target.closest('.subject-card');if(!targetCard||targetCard===card)return;const from=state.subjects.findIndex(x=>x.id===s.id);const targetIndex=state.subjects.findIndex(x=>x.id===targetCard.dataset.subjectId);if(from<0||targetIndex<0)return;const dragged=state.subjects.splice(from,1)[0];state.subjects.splice(state.subjects.findIndex(x=>x.id===targetCard.dataset.subjectId),0,dragged);await save('subjects',state.subjects);renderSubjectsPage();};document.addEventListener('pointermove',move,{passive:true});document.addEventListener('pointerup',finish,{once:true});document.addEventListener('pointercancel',finish,{once:true});});head.append(subjectGrip,heading,count,delSubject);card.appendChild(head);
+      const subjectGrip=iconButton('Drag to reorder subject','⠿');subjectGrip.classList.add('subject-list-drag-handle');
+      subjectGrip.addEventListener('pointerdown',e=>{
+        if(e.button!==0&&e.pointerType==='mouse')return;
+        e.preventDefault();
+        const rect=card.getBoundingClientRect(),startX=e.clientX,startY=e.clientY,grabX=e.clientX-rect.left,grabY=e.clientY-rect.top;
+        let moved=false,ghost=null,hoverCard=null,finished=false;
+        const clear=()=>document.querySelectorAll('.subject-card.subject-card-drop').forEach(n=>n.classList.remove('subject-card-drop'));
+        const move=ev=>{
+          if(finished)return;
+          if(Math.abs(ev.clientY-startY)>5||Math.abs(ev.clientX-startX)>5)moved=true;
+          if(!moved)return;
+          if(!ghost){ghost=card.cloneNode(true);ghost.classList.add('subject-card-drag-preview');ghost.style.width=rect.width+'px';document.body.appendChild(ghost);card.classList.add('is-dragging');}
+          ghost.style.left=Math.max(4,Math.min(window.innerWidth-rect.width-4,ev.clientX-grabX))+'px';
+          ghost.style.top=Math.max(4,ev.clientY-grabY)+'px';
+          const scrollBox=document.getElementById('main-scroll');
+          if(scrollBox){const sr=scrollBox.getBoundingClientRect(),edge=68;let speed=ev.clientY<sr.top+edge?-Math.ceil((sr.top+edge-ev.clientY)/5):ev.clientY>sr.bottom-edge?Math.ceil((ev.clientY-(sr.bottom-edge))/5):0;if(speed)scrollBox.scrollTop+=Math.max(-18,Math.min(18,speed));}
+          else if(ev.clientY<64)window.scrollBy(0,-12);else if(ev.clientY>window.innerHeight-64)window.scrollBy(0,12);
+          const hit=document.elementFromPoint(ev.clientX,ev.clientY);
+          hoverCard=hit&&hit.closest('.subject-card[data-subject-id]');
+          if(hoverCard===card)hoverCard=null;
+          clear();if(hoverCard)hoverCard.classList.add('subject-card-drop');
+        };
+        const finish=async ev=>{
+          if(finished)return;finished=true;
+          document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',finish);document.removeEventListener('pointercancel',finish);
+          clear();if(ghost)ghost.remove();card.classList.remove('is-dragging');
+          if(!moved)return;
+          const hit=Number.isFinite(ev.clientY)?document.elementFromPoint(ev.clientX,ev.clientY):null;
+          const target=hit&&hit.closest('.subject-card[data-subject-id]')||hoverCard;
+          if(!target||target===card)return;
+          const from=state.subjects.findIndex(x=>x.id===s.id),to=state.subjects.findIndex(x=>x.id===target.dataset.subjectId);
+          if(from<0||to<0||from===to)return;
+          const dragged=state.subjects.splice(from,1)[0];state.subjects.splice(to,0,dragged);
+          await save('subjects',state.subjects);renderSubjectsPage();
+        };
+        document.addEventListener('pointermove',move,{passive:false});document.addEventListener('pointerup',finish,{once:true});document.addEventListener('pointercancel',finish,{once:true});
+      });
+      head.append(subjectGrip,heading,count,delSubject);card.appendChild(head);
       const itemsWrap=document.createElement('div');itemsWrap.className='subject-items';itemsWrap.hidden=!expandedSubjectIds.has(s.id);
       if(!itemsWrap.hidden)card.classList.add('subject-expanded');
       const toggleSubject=()=>{itemsWrap.hidden=!itemsWrap.hidden;addRow.hidden=itemsWrap.hidden;card.classList.toggle('subject-expanded',!itemsWrap.hidden);};
@@ -844,6 +881,9 @@
             if(!pointerDragStarted)return;
             preview.style.left=Math.max(4,Math.min(window.innerWidth-rect.width-4,ev.clientX-grabX))+'px';
             preview.style.top=Math.max(4,ev.clientY-grabY-8)+'px';
+            const scrollBox=document.getElementById('main-scroll');
+            if(scrollBox){const sr=scrollBox.getBoundingClientRect(),edge=68;let speed=ev.clientY<sr.top+edge?-Math.ceil((sr.top+edge-ev.clientY)/5):ev.clientY>sr.bottom-edge?Math.ceil((ev.clientY-(sr.bottom-edge))/5):0;if(speed)scrollBox.scrollTop+=Math.max(-18,Math.min(18,speed));}
+            else if(ev.clientY<64)window.scrollBy(0,-12);else if(ev.clientY>window.innerHeight-64)window.scrollBy(0,12);
             const target=document.elementFromPoint(ev.clientX,ev.clientY);
             document.querySelectorAll('.subject-task-row').forEach(r=>r.classList.remove('drop-target'));
             const targetRow=target&&target.closest('.subject-task-row');
