@@ -193,12 +193,22 @@
   }
 
   const mainScroll=document.getElementById('main-scroll');
-  let mainTouchY=0;
-  mainScroll.addEventListener('touchstart',e=>{if(e.touches.length===1) mainTouchY=e.touches[0].clientY;},{passive:true});
+  let mainTouchY=0, timePickerGesture=false;
+  mainScroll.addEventListener('touchstart',e=>{
+    if(e.touches.length===1) mainTouchY=e.touches[0].clientY;
+    const target=e.target;
+    timePickerGesture=!!(target&&target.closest&&target.closest('input[type="time"]'));
+  },{passive:true});
+  document.addEventListener('focusin',e=>{
+    if(e.target&&e.target.matches&&e.target.matches('input[type="time"]')) timePickerGesture=true;
+  });
+  document.addEventListener('focusout',e=>{
+    if(e.target&&e.target.matches&&e.target.matches('input[type="time"]')) setTimeout(()=>{timePickerGesture=false;},250);
+  });
   mainScroll.addEventListener('touchmove',e=>{
     if(e.touches.length!==1) return;
     const y=e.touches[0].clientY, dy=y-mainTouchY;
-    if(document.activeElement&&document.activeElement.matches('input[type="time"]')){mainTouchY=y;return;}
+    if(timePickerGesture||(document.activeElement&&document.activeElement.matches('input[type="time"]'))){mainTouchY=y;return;}
     const atTop=mainScroll.scrollTop<=0;
     const atBottom=mainScroll.scrollTop+mainScroll.clientHeight>=mainScroll.scrollHeight-1;
     if((atTop&&dy>0)||(atBottom&&dy<0)) e.preventDefault();
