@@ -321,3 +321,33 @@
 .subject-add-row{margin-top:8px;}
 .subject-add-row input{font-size:13px;padding:9px 10px;}
 @media(max-width:480px){.subject-card{padding:12px;}.subject-task-row{gap:5px;}.subject-icon-btn{width:26px;height:26px;flex-basis:26px;}}
+
+
+/* Improve readability of Classes and touch-friendly Subjects interactions */
+#class-days-wrap .day-header{font-size:14px;padding:14px 17px;margin-top:22px;min-height:46px;box-sizing:border-box;}
+#class-days-wrap .class-row{padding:16px 17px;gap:14px;margin-bottom:11px;border-radius:16px;}
+#class-days-wrap .class-row .ctime{font-size:14px;line-height:1.4;font-weight:750;}
+#class-days-wrap .class-row .csubject{font-size:17px;line-height:1.35;font-weight:750;}
+#class-days-wrap .class-row .croom{font-size:13px;line-height:1.45;margin-top:5px;}
+#class-days-wrap .class-row .badge{font-size:12px;padding:7px 10px;}
+#class-days-wrap .class-row .item-actions .btn{font-size:14px;padding:11px 13px;min-height:40px;}
+#class-new-btn{min-height:44px;font-size:15px;padding:11px 16px;}
+.subject-task-row{gap:10px;padding:8px 0;min-height:48px;}
+.subject-task-title{font-size:15px;line-height:1.4;padding:10px 0;cursor:default;}
+.subject-drag-handle{width:32px;flex:0 0 32px;height:40px;font-size:24px;letter-spacing:-3px;opacity:.8;border-radius:8px;}
+.subject-drag-handle:active{background:rgba(255,255,255,.08);color:var(--coral);}
+.subject-task-row.is-dragging{opacity:.55;transform:scale(.99);background:rgba(255,255,255,.06);}
+.subject-task-row.drop-target{border-top:3px solid var(--coral);background:rgba(255,111,97,.08);}
+.subject-card-drop{outline:2px dashed var(--coral);outline-offset:-3px;}
+.subject-task-row .checkbtn{flex:0 0 24px;width:24px;height:24px;}
+@media(max-width:480px){
+  #class-days-wrap .day-header{font-size:13px;padding:13px 14px;min-height:44px;}
+  #class-days-wrap .class-row{padding:14px;gap:9px;}
+  #class-days-wrap .class-row .ctime{font-size:13px;}
+  #class-days-wrap .class-row .csubject{font-size:16px;}
+  #class-days-wrap .class-row .croom{font-size:12.5px;}
+  #class-days-wrap .class-row .item-actions .btn{font-size:14px;min-height:42px;padding:11px 8px;}
+  .subject-task-row{gap:7px;}
+  .subject-drag-handle{width:34px;flex-basis:34px;height:44px;}
+  .subject-task-title{font-size:15px;}
+}
