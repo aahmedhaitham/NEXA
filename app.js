@@ -638,92 +638,87 @@
   }
 
   function renderSubjectsPage(){
-    const wrap = document.getElementById('subjects-list');
-    wrap.innerHTML = '';
-    if(!state.subjects.length){
-      wrap.innerHTML = '<p style="margin-bottom:14px;">Add a subject below, then add lectures/labs under it — e.g. "Mathematics" → "Lec 2", "Lab 4".</p>';
-    }
+    const wrap=document.getElementById('subjects-list'); wrap.innerHTML='';
+    if(!state.subjects.length) wrap.innerHTML='<p style="margin-bottom:14px;color:var(--muted);">Add a subject, then add lectures or labs inside it.</p>';
+    const iconButton=(label,icon)=>{const b=document.createElement('button');b.type='button';b.className='subject-icon-btn';b.textContent=icon;b.title=label;b.setAttribute('aria-label',label);return b;};
     state.subjects.forEach(s=>{
-      const card = document.createElement('div'); card.className = 'card';
-      card.dataset.subjectId = s.id;
-      const items = state.subjectItems.filter(i=>i.subjectId===s.id);
-      const doneCount = items.filter(i=>i.done).length;
-      const head = document.createElement('div'); head.className='row'; head.style.marginBottom='10px';
-      const heading = document.createElement('h3'); heading.style.cssText='font-size:16px;font-weight:800;'; heading.textContent=s.name;
-      const count = document.createElement('span'); count.style.cssText='font-size:12px;color:var(--muted);'; count.textContent=doneCount+'/'+items.length;
-      const renameSubject = document.createElement('button'); renameSubject.className='btn gray small'; renameSubject.textContent='Rename';
-      renameSubject.onclick=async()=>{
-        const name=window.prompt('Rename subject:',s.name);
-        if(name===null)return;
-        if(!name.trim()){showToast('Subject name cannot be empty.');return;}
-        s.name=name.trim(); await save('subjects',state.subjects); renderSubjectsPage();
+      const card=document.createElement('div');card.className='card subject-card';card.dataset.subjectId=s.id;
+      const items=state.subjectItems.filter(i=>i.subjectId===s.id);
+      const head=document.createElement('div');head.className='subject-heading';
+      const heading=document.createElement('button');heading.type='button';heading.className='subject-title';heading.textContent=s.name;heading.title='Tap to rename subject';
+      const count=document.createElement('span');count.className='subject-count';count.textContent=items.filter(i=>i.done).length+'/'+items.length;
+      const rename=async()=>{
+        const input=document.createElement('input');input.className='subject-rename-input';input.value=s.name;input.setAttribute('aria-label','Subject name');
+        heading.replaceWith(input);input.focus();input.select();
+        let finished=false;
+        const finish=async saveName=>{
+          if(finished)return;finished=true;
+          const value=input.value.trim();
+          if(saveName&&value){s.name=value;await save('subjects',state.subjects);}
+          else if(saveName&&!value)showToast('Subject name cannot be empty.');
+          renderSubjectsPage();
+        };
+        input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();finish(true);}if(e.key==='Escape')finish(false);});
+        input.addEventListener('blur',()=>finish(true));
       };
-      head.append(heading,count,renameSubject); card.appendChild(head);
-      const itemsWrap = document.createElement('div'); itemsWrap.style.minHeight='8px';
+      heading.onclick=rename;
+      const renameIcon=iconButton('Rename subject','✎');renameIcon.onclick=rename;
+      const delSubject=iconButton('Delete subject','×');delSubject.classList.add('subject-delete-btn');
+      delSubject.onclick=async()=>{
+        if(!await nexaConfirm('Delete subject?','Delete "'+s.name+'" and all its tasks?'))return;
+        state.subjects=state.subjects.filter(x=>x.id!==s.id);state.subjectItems=state.subjectItems.filter(x=>x.subjectId!==s.id);
+        await save('subjects',state.subjects);await save('subjectItems',state.subjectItems);renderSubjectsPage();renderStatbar();
+      };
+      head.append(heading,count,renameIcon,delSubject);card.appendChild(head);
+      const itemsWrap=document.createElement('div');itemsWrap.className='subject-items';
       items.forEach(item=>{
-        const row = document.createElement('div'); row.className='task-row'; row.style.padding='8px 0'; row.style.cursor='grab';
-        row.draggable=true; row.dataset.subjectItemId=item.id;
-        row.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',item.id);e.dataTransfer.effectAllowed='move';row.style.opacity='.5';});
-        row.addEventListener('dragend',()=>{row.style.opacity='1';});
-        row.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';row.style.borderTop='2px solid var(--coral)';});
-        row.addEventListener('dragleave',()=>{row.style.borderTop='';});
+        const row=document.createElement('div');row.className='subject-task-row';row.dataset.subjectItemId=item.id;
+        const grip=document.createElement('span');grip.className='subject-drag-handle';grip.textContent='⠿';grip.title='Drag to reorder or move';grip.setAttribute('aria-label','Drag task');
+        grip.draggable=true;
+        grip.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',item.id);e.dataTransfer.effectAllowed='move';row.classList.add('is-dragging');});
+        grip.addEventListener('dragend',()=>{row.classList.remove('is-dragging');document.querySelectorAll('.subject-task-row').forEach(r=>r.classList.remove('drop-target'));});
+        row.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';document.querySelectorAll('.subject-task-row').forEach(r=>r.classList.remove('drop-target'));row.classList.add('drop-target');});
+        row.addEventListener('dragleave',e=>{if(!row.contains(e.relatedTarget))row.classList.remove('drop-target');});
         row.addEventListener('drop',async e=>{
-          e.preventDefault(); row.style.borderTop='';
-          const draggedId=e.dataTransfer.getData('text/plain');
-          if(!draggedId||draggedId===item.id)return;
-          const dragged=state.subjectItems.find(x=>x.id===draggedId);
-          if(!dragged)return;
+          e.preventDefault();e.stopPropagation();row.classList.remove('drop-target');
+          const draggedId=e.dataTransfer.getData('text/plain');if(!draggedId||draggedId===item.id)return;
+          const dragged=state.subjectItems.find(x=>x.id===draggedId);if(!dragged)return;
           state.subjectItems=state.subjectItems.filter(x=>x.id!==draggedId);
           dragged.subjectId=s.id;
           const targetIndex=state.subjectItems.findIndex(x=>x.id===item.id);
           state.subjectItems.splice(targetIndex<0?state.subjectItems.length:targetIndex,0,dragged);
-          await save('subjectItems',state.subjectItems); renderSubjectsPage(); renderStatbar();
+          await save('subjectItems',state.subjectItems);renderSubjectsPage();renderStatbar();
         });
-        const check=document.createElement('button'); check.className='checkbtn'+(item.done?' checked':''); check.textContent=item.done?'✓':'';
+        const check=document.createElement('button');check.className='checkbtn'+(item.done?' checked':'');check.textContent=item.done?'✓':'';
+        check.setAttribute('aria-label',item.done?'Mark incomplete':'Mark complete');
         check.onclick=async()=>{item.done=!item.done;await save('subjectItems',state.subjectItems);renderSubjectsPage();renderStatbar();};
-        const lbl=document.createElement('div'); lbl.style.flex='1';
-        lbl.innerHTML='<span class="ttitle'+(item.done?' done':'')+'">'+escapeHTML(item.title)+'</span>';
-        const edit=document.createElement('button'); edit.className='btn gray small'; edit.textContent='Edit';
-        edit.onclick=async()=>{
-          const title=window.prompt('Edit task name:',item.title);
-          if(title===null)return;
-          if(!title.trim()){showToast('Task name cannot be empty.');return;}
-          item.title=title.trim();await save('subjectItems',state.subjectItems);renderSubjectsPage();
+        const title=document.createElement('button');title.type='button';title.className='subject-task-title'+(item.done?' done':'');title.textContent=item.title;title.title='Tap to edit task name';
+        const edit=async()=>{
+          const input=document.createElement('input');input.className='subject-rename-input';input.value=item.title;input.setAttribute('aria-label','Task name');
+          title.replaceWith(input);input.focus();input.select();let finished=false;
+          const finish=async saveName=>{if(finished)return;finished=true;const value=input.value.trim();if(saveName&&value){item.title=value;await save('subjectItems',state.subjectItems);}else if(saveName&&!value)showToast('Task name cannot be empty.');renderSubjectsPage();};
+          input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();finish(true);}if(e.key==='Escape')finish(false);});
+          input.addEventListener('blur',()=>finish(true));
         };
-        const del=document.createElement('button'); del.className='btn gray small'; del.textContent='×'; del.title='Delete task';
-        del.onclick=async()=>{state.subjectItems=state.subjectItems.filter(x=>x.id!==item.id);await save('subjectItems',state.subjectItems);renderSubjectsPage();renderStatbar();};
-        row.append(check,lbl,edit,del); itemsWrap.appendChild(row);
+        title.onclick=edit;
+        const editIcon=iconButton('Edit task','✎');editIcon.onclick=edit;
+        const del=iconButton('Delete task','×');del.onclick=async()=>{state.subjectItems=state.subjectItems.filter(x=>x.id!==item.id);await save('subjectItems',state.subjectItems);renderSubjectsPage();renderStatbar();};
+        row.append(grip,check,title,editIcon,del);itemsWrap.appendChild(row);
       });
-      itemsWrap.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';});
+      itemsWrap.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';card.classList.add('subject-card-drop');});
+      itemsWrap.addEventListener('dragleave',e=>{if(!card.contains(e.relatedTarget))card.classList.remove('subject-card-drop');});
       itemsWrap.addEventListener('drop',async e=>{
-        if(e.target.closest('[data-subject-item-id]'))return;
-        e.preventDefault();
-        const draggedId=e.dataTransfer.getData('text/plain');
-        const dragged=state.subjectItems.find(x=>x.id===draggedId);
-        if(!dragged)return;
-        state.subjectItems=state.subjectItems.filter(x=>x.id!==draggedId);
-        dragged.subjectId=s.id; state.subjectItems.push(dragged);
+        if(e.target.closest('[data-subject-item-id]'))return;e.preventDefault();card.classList.remove('subject-card-drop');
+        const draggedId=e.dataTransfer.getData('text/plain');const dragged=state.subjectItems.find(x=>x.id===draggedId);if(!dragged)return;
+        state.subjectItems=state.subjectItems.filter(x=>x.id!==draggedId);dragged.subjectId=s.id;state.subjectItems.push(dragged);
         await save('subjectItems',state.subjectItems);renderSubjectsPage();renderStatbar();
       });
-      card.appendChild(itemsWrap);
-      const addRow=document.createElement('div'); addRow.style.marginTop='8px';
-      const input=document.createElement('input');input.type='text';input.placeholder='e.g. Lec 2, Lab 4 — press Enter';
+      const addRow=document.createElement('div');addRow.className='subject-add-row';
+      const input=document.createElement('input');input.type='text';input.placeholder='Add a task…';input.setAttribute('aria-label','New task for '+s.name);
       input.addEventListener('keydown',async e=>{
-        if(e.key==='Enter'&&input.value.trim()){
-          state.subjectItems.push({id:'si-'+Date.now(),subjectId:s.id,title:input.value.trim(),done:false});
-          await save('subjectItems',state.subjectItems);renderSubjectsPage();renderStatbar();
-        }
+        if(e.key==='Enter'&&input.value.trim()){state.subjectItems.push({id:'si-'+Date.now(),subjectId:s.id,title:input.value.trim(),done:false});await save('subjectItems',state.subjectItems);renderSubjectsPage();renderStatbar();}
       });
-      addRow.appendChild(input);card.appendChild(addRow);
-      const delSubject=document.createElement('button');delSubject.className='btn gray small';delSubject.textContent='Delete subject';delSubject.style.marginTop='10px';
-      delSubject.onclick=async()=>{
-        if(!await nexaConfirm('Delete subject?','Delete "'+s.name+'" and all its items?'))return;
-        state.subjects=state.subjects.filter(x=>x.id!==s.id);
-        state.subjectItems=state.subjectItems.filter(x=>x.subjectId!==s.id);
-        await save('subjects',state.subjects);await save('subjectItems',state.subjectItems);
-        renderSubjectsPage();renderStatbar();
-      };
-      card.appendChild(delSubject);wrap.appendChild(card);
+      addRow.appendChild(input);card.append(itemsWrap,addRow);wrap.appendChild(card);
     });
   }
   document.getElementById('subject-add-btn').addEventListener('click', async () => {
