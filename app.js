@@ -1228,8 +1228,7 @@
     document.getElementById('habit-in-name').value=''; document.getElementById('habit-in-time').value=''; renderHabitWeeklyTimes({}); document.getElementById('habit-edit-id').value='';
     document.querySelectorAll('#habit-day-picker .exercise-chip').forEach(b=>b.classList.remove('active'));
     document.getElementById('habit-day-picker [data-day="daily"]').classList.add('active');
-    if(editId) document.getElementById('habit-form').style.display='none';
-    else {document.getElementById('habit-form').style.display='block';document.getElementById('habit-in-name').focus();}
+    document.getElementById('habit-form').style.display='none';
     showToast(editId?'Habit updated.':'Habit added.');
   });
 
