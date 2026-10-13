@@ -212,42 +212,43 @@
       </div>
 
       <div class="subpage active" data-group="settings" id="settings-sub-general">
-        <div class="cols">
-          <div class="card">
-            <h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Notifications</h3>
-            <p id="notification-status">Notifications are off.</p>
-            <div class="notify-list">
-              <div class="notify-row"><label class="notify-toggle">Classes <input type="checkbox" id="notify-classes"></label><select id="notify-classes-lead"><option value="0">At time</option><option value="5">5 min before</option><option value="10">10 min before</option><option value="15">15 min before</option><option value="30">30 min before</option></select></div>
-              <div class="notify-row"><label class="notify-toggle">Habits <input type="checkbox" id="notify-habits"></label><select id="notify-habits-lead"><option value="0">At habit time</option><option value="5">5 min before</option><option value="10">10 min before</option><option value="15">15 min before</option></select></div>
-              <div class="notify-row"><label class="notify-toggle">Prayer <input type="checkbox" id="notify-prayer"></label><select id="notify-prayer-lead"><option value="0">At prayer time</option><option value="5">5 min before</option><option value="10">10 min before</option><option value="15">15 min before</option></select></div>
-              <div class="notify-row"><label class="notify-toggle">Events <input type="checkbox" id="notify-events"></label><select id="notify-events-lead"><option value="0">At 9:00 AM</option><option value="30">8:30 AM</option><option value="60">8:00 AM</option></select></div>
+        <div class="settings-list">
+          <details class="settings-section">
+            <summary><span class="settings-section-icon">♧</span><span class="settings-section-label"><strong>Notifications</strong><small id="notification-status">Notifications are off.</small></span><span class="settings-chevron">›</span></summary>
+            <div class="settings-section-content">
+              <div class="notify-list">
+                <div class="notify-row"><label class="notify-toggle">Classes <input type="checkbox" id="notify-classes"></label><select id="notify-classes-lead"><option value="0">At time</option><option value="5">5 min before</option><option value="10">10 min before</option><option value="15">15 min before</option><option value="30">30 min before</option></select></div>
+                <div class="notify-row"><label class="notify-toggle">Habits <input type="checkbox" id="notify-habits"></label><select id="notify-habits-lead"><option value="0">At habit time</option><option value="5">5 min before</option><option value="10">10 min before</option><option value="15">15 min before</option></select></div>
+                <div class="notify-row"><label class="notify-toggle">Prayer <input type="checkbox" id="notify-prayer"></label><select id="notify-prayer-lead"><option value="0">At prayer time</option><option value="5">5 min before</option><option value="10">10 min before</option><option value="15">15 min before</option></select></div>
+                <div class="notify-row"><label class="notify-toggle">Events <input type="checkbox" id="notify-events"></label><select id="notify-events-lead"><option value="0">At 9:00 AM</option><option value="30">8:30 AM</option><option value="60">8:00 AM</option></select></div>
+              </div>
+              <div class="grid2"><button class="btn secondary" id="enable-notifications-btn">Enable notifications</button><button class="btn green" id="save-settings-btn">Save</button></div>
             </div>
-            <div class="grid2"><button class="btn secondary" id="enable-notifications-btn">Enable notifications</button><button class="btn green" id="save-settings-btn">Save</button></div>
-          </div>
-          <div class="card">
-            <h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Nutrition goals</h3>
-            <div class="grid2">
-              <div class="field"><label>Calories</label><input type="number" id="goal-cal" placeholder="2200"></div>
-              <div class="field"><label>Protein (g)</label><input type="number" id="goal-protein" placeholder="150"></div>
-              <div class="field"><label>Carbs (g)</label><input type="number" id="goal-carbs" placeholder="220"></div>
-              <div class="field"><label>Fat (g)</label><input type="number" id="goal-fat" placeholder="70"></div>
+          </details>
+          <details class="settings-section">
+            <summary><span class="settings-section-icon">◉</span><span class="settings-section-label"><strong>Nutrition goals</strong><small>Daily calorie and macro targets</small></span><span class="settings-chevron">›</span></summary>
+            <div class="settings-section-content">
+              <div class="grid2">
+                <div class="field"><label>Calories</label><input type="number" id="goal-cal" placeholder="2200"></div>
+                <div class="field"><label>Protein (g)</label><input type="number" id="goal-protein" placeholder="150"></div>
+                <div class="field"><label>Carbs (g)</label><input type="number" id="goal-carbs" placeholder="220"></div>
+                <div class="field"><label>Fat (g)</label><input type="number" id="goal-fat" placeholder="70"></div>
+              </div>
+              <button class="btn green full" id="save-goals-btn">Save nutrition goals</button>
             </div>
-            <button class="btn green full" id="save-goals-btn">Save nutrition goals</button>
-          </div>
-          <div class="card">
-            <h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Weekly split</h3>
-            <div id="plan-days"></div>
-          </div>
-          <div class="card">
-            <h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">App update</h3>
-            <p>Force Nexa to fetch the newest deployed version.</p>
-            <button class="btn secondary full" id="refresh-app-btn">Refresh Nexa</button>
-          </div>
-          <div class="card">
-            <h3 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Reset all data</h3>
-            <p>Wipes every exercise, log, event, task, and habit.</p>
-            <button class="btn" style="background:#c0392b;" id="reset-btn">Reset all data</button>
-          </div>
+          </details>
+          <details class="settings-section">
+            <summary><span class="settings-section-icon">▦</span><span class="settings-section-label"><strong>Weekly split</strong><small>Workout schedule and custom splits</small></span><span class="settings-chevron">›</span></summary>
+            <div class="settings-section-content"><div id="plan-days"></div></div>
+          </details>
+          <details class="settings-section">
+            <summary><span class="settings-section-icon">↻</span><span class="settings-section-label"><strong>App update</strong><small>Refresh Nexa to load the latest version</small></span><span class="settings-chevron">›</span></summary>
+            <div class="settings-section-content"><p>Force Nexa to fetch the newest deployed version.</p><button class="btn secondary full" id="refresh-app-btn">Refresh Nexa</button></div>
+          </details>
+          <details class="settings-section settings-danger">
+            <summary><span class="settings-section-icon">!</span><span class="settings-section-label"><strong>Reset all data</strong><small>Delete all Nexa data on this device</small></span><span class="settings-chevron">›</span></summary>
+            <div class="settings-section-content"><p>Wipes every exercise, log, event, task, and habit.</p><button class="btn full" style="background:#c0392b;" id="reset-btn">Reset all data</button></div>
+          </details>
         </div>
       </div>
 
