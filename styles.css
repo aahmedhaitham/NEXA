@@ -532,3 +532,6 @@ input[type="time"]{color-scheme:light;min-height:44px;max-width:100%;touch-actio
 #class-days-wrap .class-row{padding:11px 12px!important;margin-bottom:7px!important;gap:9px!important;border-radius:12px!important;}
 .subject-heading .subject-expand-btn{margin-left:auto;order:2;}
 @media(max-width:480px){#class-days-wrap .day-header{min-height:44px!important;padding:10px 11px!important;font-size:13px!important}#class-days-wrap .class-day-count{gap:6px;font-size:10px}#class-days-wrap .class-row{padding:10px!important}}
+
+/* Subject tasks collapse on title tap; no separate arrow control */
+.subject-heading .subject-expand-btn{display:none!important;}
