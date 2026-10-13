@@ -701,19 +701,22 @@
           if(e.button!==0&&e.pointerType==='mouse')return;
           e.preventDefault();
           pointerDragStarted=true;
-          row.classList.add('is-dragging');
           const rect=row.getBoundingClientRect();
+          const grabX=Math.max(0,Math.min(rect.width,e.clientX-rect.left));
+          const grabY=Math.max(0,Math.min(rect.height,e.clientY-rect.top));
+          row.classList.add('is-dragging');
           const preview=row.cloneNode(true);
           preview.classList.add('subject-drag-preview');
           preview.style.width=rect.width+'px';
-          preview.style.left=(e.clientX+10)+'px';
-          preview.style.top=(e.clientY+10)+'px';
+          preview.style.left=Math.max(4,Math.min(window.innerWidth-rect.width-4,e.clientX-grabX))+'px';
+          preview.style.top=Math.max(4,e.clientY-grabY-8)+'px';
           preview.style.maxWidth='calc(100vw - 20px)';
           document.body.appendChild(preview);
+          requestAnimationFrame(()=>preview.classList.add('is-lifted'));
           const move=ev=>{
             if(!pointerDragStarted)return;
-            preview.style.left=Math.max(4,Math.min(window.innerWidth-rect.width-4,ev.clientX+10))+'px';
-            preview.style.top=(ev.clientY+12)+'px';
+            preview.style.left=Math.max(4,Math.min(window.innerWidth-rect.width-4,ev.clientX-grabX))+'px';
+            preview.style.top=Math.max(4,ev.clientY-grabY-8)+'px';
             const target=document.elementFromPoint(ev.clientX,ev.clientY);
             document.querySelectorAll('.subject-task-row').forEach(r=>r.classList.remove('drop-target'));
             const targetRow=target&&target.closest('.subject-task-row');
@@ -727,6 +730,7 @@
             pointerDragStarted=false;
             document.removeEventListener('pointermove',move);
             document.removeEventListener('pointerup',finish);
+            document.removeEventListener('pointercancel',finish);
             row.classList.remove('is-dragging');
             preview.remove();
             document.querySelectorAll('.subject-task-row').forEach(r=>r.classList.remove('drop-target'));
@@ -752,6 +756,7 @@
           };
           document.addEventListener('pointermove',move,{passive:true});
           document.addEventListener('pointerup',finish,{once:true});
+          document.addEventListener('pointercancel',finish,{once:true});
         });
         const check=document.createElement('button');check.className='checkbtn'+(item.done?' checked':'');check.textContent=item.done?'✓':'';
         check.setAttribute('aria-label',item.done?'Mark incomplete':'Mark complete');
