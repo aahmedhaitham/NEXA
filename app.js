@@ -489,38 +489,69 @@
       grip.addEventListener('pointerdown',e=>{
         if(e.button!==0&&e.pointerType==='mouse')return;
         e.preventDefault();
-        const rect=row.getBoundingClientRect(),startX=e.clientX,startY=e.clientY,grabX=e.clientX-rect.left,grabY=e.clientY-rect.top;
+        const rect=row.getBoundingClientRect(),startX=e.clientX,startY=e.clientY;
+        const grabX=e.clientX-rect.left,grabY=e.clientY-rect.top;
         let moved=false,ghost=null,hoverRow=null,finished=false;
         const clear=()=>document.querySelectorAll('.task-row.task-drop-target').forEach(n=>n.classList.remove('task-drop-target'));
+        const cleanup=()=>{
+          document.removeEventListener('pointermove',move);
+          document.removeEventListener('pointerup',finish);
+          document.removeEventListener('pointercancel',cancel);
+          clear();
+          if(ghost)ghost.remove();
+          row.classList.remove('is-dragging');
+        };
         const move=ev=>{
           if(finished)return;
           if(Math.abs(ev.clientY-startY)>5||Math.abs(ev.clientX-startX)>5)moved=true;
           if(!moved)return;
-          if(!ghost){ghost=row.cloneNode(true);ghost.classList.add('task-drag-preview');ghost.style.width=rect.width+'px';document.body.appendChild(ghost);row.classList.add('is-dragging');}
+          if(!ghost){
+            ghost=row.cloneNode(true);
+            ghost.classList.add('task-drag-preview');
+            ghost.style.width=rect.width+'px';
+            document.body.appendChild(ghost);
+            row.classList.add('is-dragging');
+          }
           ghost.style.left=Math.max(4,Math.min(window.innerWidth-rect.width-4,ev.clientX-grabX))+'px';
-          ghost.style.top=Math.max(4,ev.clientY-grabY)+'px';
+          ghost.style.top=Math.max(4,Math.min(window.innerHeight-rect.height,ev.clientY-grabY))+'px';
           const scrollBox=document.getElementById('main-scroll');
-          if(scrollBox){const sr=scrollBox.getBoundingClientRect(),edge=68;let speed=ev.clientY<sr.top+edge?-Math.ceil((sr.top+edge-ev.clientY)/5):ev.clientY>sr.bottom-edge?Math.ceil((ev.clientY-(sr.bottom-edge))/5):0;if(speed)scrollBox.scrollTop+=Math.max(-18,Math.min(18,speed));}
-          else if(ev.clientY<64)window.scrollBy(0,-12);else if(ev.clientY>window.innerHeight-64)window.scrollBy(0,12);
+          if(scrollBox){
+            const sr=scrollBox.getBoundingClientRect(),edge=68;
+            const speed=ev.clientY<sr.top+edge?-Math.ceil((sr.top+edge-ev.clientY)/5):ev.clientY>sr.bottom-edge?Math.ceil((ev.clientY-(sr.bottom-edge))/5):0;
+            if(speed)scrollBox.scrollTop+=Math.max(-18,Math.min(18,speed));
+          }
           const hit=document.elementFromPoint(ev.clientX,ev.clientY);
-          hoverRow=hit&&hit.closest('.task-row[data-task-id]');
-          if(hoverRow===row||hoverRow&&hoverRow.parentElement!==row.parentElement)hoverRow=null;
-          clear();if(hoverRow)hoverRow.classList.add('task-drop-target');
+          const candidate=hit&&hit.closest('.task-row[data-task-id]');
+          hoverRow=candidate&&candidate!==row&&candidate.parentElement===row.parentElement?candidate:null;
+          clear();
+          if(hoverRow)hoverRow.classList.add('task-drop-target');
         };
         const finish=async ev=>{
-          if(finished)return;finished=true;
-          document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',finish);document.removeEventListener('pointercancel',finish);
-          clear();if(ghost)ghost.remove();row.classList.remove('is-dragging');
-          if(!moved)return;
-          const hit=Number.isFinite(ev.clientY)?document.elementFromPoint(ev.clientX,ev.clientY):null;
-          const target=hit&&hit.closest('.task-row[data-task-id]')||hoverRow;
-          if(!target||target===row||target.parentElement!==row.parentElement)return;
-          const from=state.tasks.findIndex(x=>x.id===t.id),to=state.tasks.findIndex(x=>x.id===target.dataset.taskId);
-          if(from<0||to<0||state.tasks[from].done!==state.tasks[to].done)return;
-          const dragged=state.tasks.splice(from,1)[0];state.tasks.splice(state.tasks.findIndex(x=>x.id===target.dataset.taskId),0,dragged);
-          await save('tasks',state.tasks);renderTaskList();
+          if(finished)return;
+          finished=true;
+          const target=hoverRow;
+          cleanup();
+          if(!moved||!target||target===row)return;
+          const from=list.findIndex(x=>x.id===t.id),to=list.findIndex(x=>x.id===target.dataset.taskId);
+          if(from<0||to<0||list[from].done!==list[to].done)return;
+          const ordered=list.slice();
+          const dragged=ordered.splice(from,1)[0];
+          let insert=ordered.findIndex(x=>x.id===target.dataset.taskId);
+          const targetRect=target.getBoundingClientRect();
+          if(Number.isFinite(ev.clientY)&&ev.clientY>targetRect.top+targetRect.height/2)insert++;
+          ordered.splice(Math.max(0,insert),0,dragged);
+          state.tasks=ordered;
+          await save('tasks',state.tasks);
+          renderTaskList();
         };
-        document.addEventListener('pointermove',move,{passive:false});document.addEventListener('pointerup',finish,{once:true});document.addEventListener('pointercancel',finish,{once:true});
+        const cancel=()=>{
+          if(finished)return;
+          finished=true;
+          cleanup();
+        };
+        document.addEventListener('pointermove',move,{passive:false});
+        document.addEventListener('pointerup',finish);
+        document.addEventListener('pointercancel',cancel);
       });
       const check = document.createElement('button'); check.className='checkbtn'+(t.done?' checked':''); check.textContent=t.done?'\u2713':'';
       check.onclick = async ()=>{ t.done=!t.done; haptic(); await save('tasks', state.tasks); renderTaskList(); renderStatbar(); };
