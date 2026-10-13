@@ -693,20 +693,53 @@
       items.forEach(item=>{
         const row=document.createElement('div');row.className='subject-task-row';row.dataset.subjectItemId=item.id;
         const grip=document.createElement('span');grip.className='subject-drag-handle';grip.textContent='⠿';grip.title='Drag to reorder or move';grip.setAttribute('aria-label','Drag task');
-        grip.draggable=true;
-        grip.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',item.id);e.dataTransfer.effectAllowed='move';row.classList.add('is-dragging');});
-        grip.addEventListener('dragend',()=>{row.classList.remove('is-dragging');document.querySelectorAll('.subject-task-row').forEach(r=>r.classList.remove('drop-target'));});
-        row.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';document.querySelectorAll('.subject-task-row').forEach(r=>r.classList.remove('drop-target'));row.classList.add('drop-target');});
-        row.addEventListener('dragleave',e=>{if(!row.contains(e.relatedTarget))row.classList.remove('drop-target');});
-        row.addEventListener('drop',async e=>{
-          e.preventDefault();e.stopPropagation();row.classList.remove('drop-target');
-          const draggedId=e.dataTransfer.getData('text/plain');if(!draggedId||draggedId===item.id)return;
-          const dragged=state.subjectItems.find(x=>x.id===draggedId);if(!dragged)return;
-          state.subjectItems=state.subjectItems.filter(x=>x.id!==draggedId);
-          dragged.subjectId=s.id;
-          const targetIndex=state.subjectItems.findIndex(x=>x.id===item.id);
-          state.subjectItems.splice(targetIndex<0?state.subjectItems.length:targetIndex,0,dragged);
-          await save('subjectItems',state.subjectItems);renderSubjectsPage();renderStatbar();
+        grip.draggable=false;
+        grip.style.touchAction='none';
+        let pointerDragStarted=false;
+        grip.addEventListener('pointerdown',e=>{
+          if(e.button!==0&&e.pointerType==='mouse')return;
+          e.preventDefault();
+          pointerDragStarted=true;
+          row.classList.add('is-dragging');
+          const move=ev=>{
+            if(!pointerDragStarted)return;
+            const target=document.elementFromPoint(ev.clientX,ev.clientY);
+            document.querySelectorAll('.subject-task-row').forEach(r=>r.classList.remove('drop-target'));
+            const targetRow=target&&target.closest('.subject-task-row');
+            if(targetRow&&targetRow!==row)targetRow.classList.add('drop-target');
+            const targetCard=target&&target.closest('.subject-card');
+            document.querySelectorAll('.subject-card').forEach(c=>c.classList.remove('subject-card-drop'));
+            if(targetCard&&targetCard!==card&&!targetRow)targetCard.classList.add('subject-card-drop');
+          };
+          const finish=async ev=>{
+            if(!pointerDragStarted)return;
+            pointerDragStarted=false;
+            document.removeEventListener('pointermove',move);
+            document.removeEventListener('pointerup',finish);
+            row.classList.remove('is-dragging');
+            document.querySelectorAll('.subject-task-row').forEach(r=>r.classList.remove('drop-target'));
+            document.querySelectorAll('.subject-card').forEach(c=>c.classList.remove('subject-card-drop'));
+            const target=document.elementFromPoint(ev.clientX,ev.clientY);
+            const targetRow=target&&target.closest('.subject-task-row');
+            const targetCard=target&&target.closest('.subject-card');
+            if(targetRow&&targetRow.dataset.subjectItemId!==item.id){
+              const dragged=state.subjectItems.find(x=>x.id===item.id);
+              if(!dragged)return;
+              state.subjectItems=state.subjectItems.filter(x=>x.id!==item.id);
+              dragged.subjectId=targetRow.closest('.subject-card').dataset.subjectId;
+              const targetIndex=state.subjectItems.findIndex(x=>x.id===targetRow.dataset.subjectItemId);
+              state.subjectItems.splice(targetIndex<0?state.subjectItems.length:targetIndex,0,dragged);
+              await save('subjectItems',state.subjectItems);renderSubjectsPage();renderStatbar();
+            }else if(targetCard&&targetCard!==card){
+              const dragged=state.subjectItems.find(x=>x.id===item.id);
+              if(!dragged)return;
+              state.subjectItems=state.subjectItems.filter(x=>x.id!==item.id);
+              dragged.subjectId=targetCard.dataset.subjectId;state.subjectItems.push(dragged);
+              await save('subjectItems',state.subjectItems);renderSubjectsPage();renderStatbar();
+            }
+          };
+          document.addEventListener('pointermove',move,{passive:true});
+          document.addEventListener('pointerup',finish,{once:true});
         });
         const check=document.createElement('button');check.className='checkbtn'+(item.done?' checked':'');check.textContent=item.done?'✓':'';
         check.setAttribute('aria-label',item.done?'Mark incomplete':'Mark complete');
@@ -720,9 +753,11 @@
           input.addEventListener('blur',()=>finish(true));
         };
         title.onclick=edit;
-        const editIcon=iconButton('Edit task','✎');editIcon.onclick=edit;
+        title.onclick=null;
+        title.ondblclick=edit;
+        title.title='Double-tap or double-click to edit task name';
         const del=iconButton('Delete task','×');del.onclick=async()=>{state.subjectItems=state.subjectItems.filter(x=>x.id!==item.id);await save('subjectItems',state.subjectItems);renderSubjectsPage();renderStatbar();};
-        row.append(grip,check,title,editIcon,del);itemsWrap.appendChild(row);
+        row.append(grip,check,title,del);itemsWrap.appendChild(row);
       });
       itemsWrap.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';card.classList.add('subject-card-drop');});
       itemsWrap.addEventListener('dragleave',e=>{if(!card.contains(e.relatedTarget))card.classList.remove('subject-card-drop');});
