@@ -171,8 +171,8 @@
       if(sub==='habits') renderHabitGrid();
     }
     if(group==='settings'){
-      if(sub==='general') renderPlanEditor();
-      if(sub==='classes') renderClassesPage();
+      renderPlanEditor();
+      renderClassesPage();
     }
   }
   function gotoSubtab(group, sub){
