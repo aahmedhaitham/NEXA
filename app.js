@@ -997,12 +997,28 @@
       addRow.appendChild(input);card.append(itemsWrap,addRow);wrap.appendChild(card);
     });
   }
+  const subjectAddForm=document.getElementById('subject-add-form');
+  const subjectNameInput=document.getElementById('subject-in-name');
+  function closeSubjectAddForm(){subjectAddForm.style.display='none';}
+  document.getElementById('subject-new-btn').addEventListener('click',()=>{
+    if(subjectAddForm.style.display!=='none'){closeSubjectAddForm();return;}
+    subjectNameInput.value='';
+    subjectAddForm.style.display='block';
+    subjectNameInput.focus();
+  });
+  document.getElementById('subject-cancel-btn').addEventListener('click',closeSubjectAddForm);
+  document.addEventListener('click',e=>{
+    if(subjectAddForm.style.display==='none'||subjectAddForm.contains(e.target)||e.target.closest('#subject-new-btn'))return;
+    closeSubjectAddForm();
+  });
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&subjectAddForm.style.display!=='none')closeSubjectAddForm();});
   document.getElementById('subject-add-btn').addEventListener('click', async () => {
-    const name = document.getElementById('subject-in-name').value.trim();
-    if(!name){ showToast('Name the subject first.'); return; }
+    const name = subjectNameInput.value.trim();
+    if(!name){ showToast('Name the subject first.'); subjectNameInput.focus(); return; }
     state.subjects.push({id:'subj-'+Date.now(), name});
     await save('subjects', state.subjects);
-    document.getElementById('subject-in-name').value = '';
+    subjectNameInput.value = '';
+    closeSubjectAddForm();
     renderSubjectsPage(); renderStatbar();
     showToast('Subject added.');
   });
