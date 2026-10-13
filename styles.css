@@ -561,3 +561,14 @@ input[type="time"]{color-scheme:light;min-height:44px;max-width:100%;touch-actio
 .habit-drag-preview{position:fixed!important;z-index:2147483000!important;pointer-events:none!important;display:block!important;box-sizing:border-box!important;margin:0!important;opacity:.98!important;transform:scale(1.025)!important;transform-origin:top left!important;border:1px solid var(--coral)!important;border-radius:14px!important;background:var(--panel,#202127)!important;box-shadow:0 18px 44px rgba(0,0,0,.48)!important;will-change:top,left;overflow:hidden;}
 .habit-drag-preview .habit-order-handle{color:var(--coral)!important;}
 .habit-progress-card.habit-drop-target{outline:2px solid var(--coral)!important;outline-offset:2px;background:rgba(255,111,97,.09)!important;}
+
+
+/* Shared lifted-drag treatment for task rows and subject cards. */
+.task-row.is-dragging,.subject-card.is-dragging{opacity:.22!important;outline:1px dashed var(--coral);outline-offset:-2px;}
+.task-drag-preview,.subject-card-drag-preview{position:fixed!important;z-index:2147483000!important;pointer-events:none!important;display:flex!important;box-sizing:border-box!important;margin:0!important;opacity:.98!important;transform:scale(1.025)!important;transform-origin:top left!important;border:1px solid var(--coral)!important;border-radius:14px!important;background:var(--panel,#202127)!important;box-shadow:0 18px 44px rgba(0,0,0,.48)!important;will-change:top,left;overflow:hidden;}
+.task-drag-preview{align-items:center;}
+.task-drag-preview .task-drag-handle,.subject-card-drag-preview .subject-list-drag-handle{color:var(--coral)!important;}
+.task-row.task-drop-target,.subject-task-row.drop-target{outline:2px solid var(--coral)!important;outline-offset:1px;border-radius:10px;background:rgba(255,111,97,.09)!important;}
+.subject-card.subject-card-drop{outline:2px solid var(--coral)!important;outline-offset:2px;background:rgba(255,111,97,.07)!important;}
+.task-row{touch-action:pan-y;}
+.task-drag-handle,.subject-list-drag-handle,.subject-drag-handle{touch-action:none!important;-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none;}
