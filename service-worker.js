@@ -1,5 +1,5 @@
-const CACHE='nexa-v19';
-const APP_SHELL=['./','./index.html','./manifest.webmanifest','./apple-touch-icon.png','./icon-192.png','./icon-512.png','./push-config.js','./styles.css','./app.js'];
+const CACHE='nexa-v20';
+const APP_SHELL=['./','./index.html','./manifest.webmanifest','./apple-touch-icon.png','./logo.png','./icon-192.png','./icon-512.png','./push-config.js','./styles.css','./app.js'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(c=>c.addAll(APP_SHELL)).then(()=>self.skipWaiting()));});
 self.addEventListener('message',event=>{if(event.data&&event.data.type==='SKIP_WAITING')self.skipWaiting();});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
