@@ -472,7 +472,7 @@
 .subject-list-drag-handle{flex:0 0 28px;touch-action:none;cursor:grab;font-size:20px;}
 .subject-list-drag-handle:active{color:var(--coral);background:rgba(255,255,255,.08);}
 #main-scroll{overscroll-behavior-y:contain;}
-input[type="time"]{color-scheme:dark;min-height:44px;max-width:100%;touch-action:manipulation;}
+input[type="time"]{color-scheme:light;min-height:44px;max-width:100%;touch-action:manipulation;-webkit-appearance:auto;appearance:auto;}
 
 /* Collapsible class weekdays and subject task lists */
 #class-days-wrap .class-day-group{margin-bottom:10px;}
