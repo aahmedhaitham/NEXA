@@ -715,7 +715,7 @@
       };
       const subjectGrip=iconButton('Drag to reorder subject','⠿');subjectGrip.classList.add('subject-list-drag-handle');subjectGrip.addEventListener('pointerdown',e=>{if(e.button!==0&&e.pointerType==='mouse')return;e.preventDefault();const startY=e.clientY;let moved=false;const move=ev=>{if(Math.abs(ev.clientY-startY)>5)moved=true;if(!moved)return;const target=document.elementFromPoint(ev.clientX,ev.clientY);const targetCard=target&&target.closest('.subject-card');document.querySelectorAll('.subject-card.subject-card-drop').forEach(n=>n.classList.remove('subject-card-drop'));if(targetCard&&targetCard!==card)targetCard.classList.add('subject-card-drop');};const finish=async ev=>{document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',finish);document.removeEventListener('pointercancel',finish);document.querySelectorAll('.subject-card.subject-card-drop').forEach(n=>n.classList.remove('subject-card-drop'));if(!moved)return;const target=document.elementFromPoint(ev.clientX,ev.clientY);const targetCard=target&&target.closest('.subject-card');if(!targetCard||targetCard===card)return;const from=state.subjects.findIndex(x=>x.id===s.id);const targetIndex=state.subjects.findIndex(x=>x.id===targetCard.dataset.subjectId);if(from<0||targetIndex<0)return;const dragged=state.subjects.splice(from,1)[0];state.subjects.splice(state.subjects.findIndex(x=>x.id===targetCard.dataset.subjectId),0,dragged);await save('subjects',state.subjects);renderSubjectsPage();};document.addEventListener('pointermove',move,{passive:true});document.addEventListener('pointerup',finish,{once:true});document.addEventListener('pointercancel',finish,{once:true});});const chevron=iconButton('Expand subject tasks','⌄');chevron.classList.add('subject-expand-btn');head.append(chevron,heading,count,subjectGrip,delSubject);card.appendChild(head);
       const itemsWrap=document.createElement('div');itemsWrap.className='subject-items';itemsWrap.hidden=true;
-      const toggleSubject=()=>{itemsWrap.hidden=!itemsWrap.hidden;card.classList.toggle('subject-expanded',!itemsWrap.hidden);};
+      const toggleSubject=()=>{itemsWrap.hidden=!itemsWrap.hidden;addRow.hidden=itemsWrap.hidden;card.classList.toggle('subject-expanded',!itemsWrap.hidden);};
       chevron.onclick=toggleSubject;heading.onclick=toggleSubject;
       items.forEach(item=>{
         const row=document.createElement('div');row.className='subject-task-row';row.dataset.subjectItemId=item.id;
@@ -810,7 +810,7 @@
         state.subjectItems=state.subjectItems.filter(x=>x.id!==draggedId);dragged.subjectId=s.id;state.subjectItems.push(dragged);
         await save('subjectItems',state.subjectItems);renderSubjectsPage();renderStatbar();
       });
-      const addRow=document.createElement('div');addRow.className='subject-add-row';
+      const addRow=document.createElement('div');addRow.className='subject-add-row';addRow.hidden=true;
       const input=document.createElement('input');input.type='text';input.placeholder='Add a task…';input.setAttribute('aria-label','New task for '+s.name);
       input.addEventListener('keydown',async e=>{
         if(e.key==='Enter'&&input.value.trim()){state.subjectItems.push({id:'si-'+Date.now(),subjectId:s.id,title:input.value.trim(),done:false});await save('subjectItems',state.subjectItems);renderSubjectsPage();renderStatbar();}
