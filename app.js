@@ -527,7 +527,7 @@
   function renderHabitGrid(){
     const wrap = document.getElementById('habit-grid'); wrap.innerHTML = '';
     if(!state.habits.length){ wrap.innerHTML='<p>No habits yet.</p>'; return; }
-    const week=[];for(let i=6;i>=0;i--){const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()-i);week.push(d);}const month=[];for(let i=29;i>=0;i--){const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()-i);month.push(d);}
+    const week=[];{const today=new Date();today.setHours(12,0,0,0);const start=new Date(today);start.setDate(today.getDate()-((today.getDay()+1)%7));for(let i=0;i<7;i++){const d=new Date(start);d.setDate(start.getDate()+i);week.push(d);}}const month=[];for(let i=29;i>=0;i--){const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()-i);month.push(d);}
     state.habits.forEach(h=>{const row=document.createElement('div');row.className='habit-progress-card';const streak=habitStreak(h);const dayCells=week.map(d=>{const key=dateKey(d),scheduled=habitIsScheduled(h,d),on=!!((state.habitLogs[key]||{})[h.id]);return '<button type="button" class="habit-day'+(on?' on':'')+(!scheduled?' muted':'')+(key===todayKey()?' today':'')+'" data-date="'+key+'" data-habit="'+h.id+'" '+(!scheduled?'disabled':'')+'><span>'+['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]+'</span><b>'+(on?'✓':d.getDate())+'</b></button>';}).join('');const monthCells=month.map(d=>{const key=dateKey(d),scheduled=habitIsScheduled(h,d),on=!!((state.habitLogs[key]||{})[h.id]);return '<button type="button" title="'+key+'" class="habit-month-day'+(on?' on':'')+(!scheduled?' muted':'')+'" data-date="'+key+'" data-habit="'+h.id+'" '+(!scheduled?'disabled':'')+'>'+d.getDate()+'</button>';}).join('');const scheduleLabel=(Array.isArray(h.days)&&h.days.length&&h.days[0]!=='daily')?h.days.map(x=>x.toUpperCase()).join(' · '):'Every day';row.innerHTML='<div class="habit-progress-head"><div class="heat-name">'+escapeHTML(h.name)+(h.time||Object.keys(h.weeklyTimes||{}).length?'<div class="habit-time">'+(Object.keys(h.weeklyTimes||{}).length?'Custom times by day':formatHabitTime(h.time))+'</div>':'')+'<div class="habit-schedule">'+scheduleLabel+'</div></div><div class="heat-streak"><b>'+streak+'</b><span>day streak</span></div></div><div class="habit-week">'+dayCells+'</div><button type="button" class="btn ghost small habit-history-toggle" data-history="'+h.id+'">View 30-day history</button><div class="habit-month" data-month="'+h.id+'" hidden>'+monthCells+'</div><div class="item-actions"><button class="btn gray small" data-edit-habit="'+h.id+'">Edit</button><button class="btn gray small" data-del-habit="'+h.id+'">Delete</button></div>';wrap.appendChild(row);});
     wrap.querySelectorAll('[data-history]').forEach(btn=>btn.onclick=()=>{const box=wrap.querySelector('[data-month="'+btn.dataset.history+'"]');box.hidden=!box.hidden;btn.textContent=box.hidden?'View 30-day history':'Hide 30-day history';});
     wrap.querySelectorAll('[data-edit-habit]').forEach(btn=>btn.addEventListener('click',()=>{
@@ -549,7 +549,8 @@
       const d=c.dataset.date, hid=c.dataset.habit;
       if(!state.habitLogs[d]) state.habitLogs[d]={};
       state.habitLogs[d][hid] = !state.habitLogs[d][hid];
-      await save('habitLogs', state.habitLogs); renderHabitGrid(); renderStatbar(); renderDashboard();
+      renderHabitGrid(); renderStatbar(); renderDashboard();
+      await save('habitLogs', state.habitLogs);
     }));
   }
   function renderNutritionPage(){
@@ -1022,12 +1023,13 @@
     const editId=document.getElementById('habit-edit-id').value;
     if(editId){const h=state.habits.find(x=>x.id===editId);if(h){h.name=name;h.time=time;h.days=selectedDays;h.weeklyTimes=weeklyTimes;}}
     else state.habits.push({id:'h-'+Date.now(), name, time, days:selectedDays, weeklyTimes, preset:false});
+    renderHabitGrid();renderStatbar();renderDashboard();
     await save('habits', state.habits);
     document.getElementById('habit-in-name').value=''; document.getElementById('habit-in-time').value=''; renderHabitWeeklyTimes({}); document.getElementById('habit-edit-id').value='';
     document.querySelectorAll('#habit-day-picker .exercise-chip').forEach(b=>b.classList.remove('active'));
     document.getElementById('habit-day-picker [data-day="daily"]').classList.add('active');
     document.getElementById('habit-form').style.display='none';
-    renderHabitGrid();renderStatbar();renderDashboard(); showToast(editId?'Habit updated.':'Habit added.');
+    showToast(editId?'Habit updated.':'Habit added.');
   });
 
   document.getElementById('nut-add-btn').addEventListener('click', async ()=>{
