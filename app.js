@@ -588,7 +588,9 @@
   }
 
   function renderHabitGrid(){
-    const wrap = document.getElementById('habit-grid'); wrap.innerHTML = '';
+    const wrap = document.getElementById('habit-grid');
+    const expandedHistoryIds=new Set([...wrap.querySelectorAll('.habit-month:not([hidden])')].map(box=>box.dataset.month));
+    wrap.innerHTML = '';
     if(!state.habits.length){ wrap.innerHTML='<p>No habits yet.</p>'; return; }
     const week=[];{const today=new Date();today.setHours(12,0,0,0);const start=new Date(today);start.setDate(today.getDate()-((today.getDay()+1)%7));for(let i=0;i<7;i++){const d=new Date(start);d.setDate(start.getDate()+i);week.push(d);}}const month=[];for(let i=29;i>=0;i--){const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()-i);month.push(d);}
     state.habits.forEach(h=>{const row=document.createElement('div');row.className='habit-progress-card';row.dataset.habitId=h.id;const streak=habitStreak(h);const dayCells=week.map(d=>{const key=dateKey(d),scheduled=habitIsScheduled(h,d),on=!!((state.habitLogs[key]||{})[h.id]);return '<button type="button" class="habit-day'+(on?' on':'')+(!scheduled?' muted':'')+(key===todayKey()?' today':'')+'" data-date="'+key+'" data-habit="'+h.id+'" '+(!scheduled?'disabled':'')+'><span>'+['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]+'</span><b>'+(on?'✓':d.getDate())+'</b></button>';}).join('');const monthCells=month.map(d=>{const key=dateKey(d),scheduled=habitIsScheduled(h,d),on=!!((state.habitLogs[key]||{})[h.id]);return '<button type="button" title="'+key+'" class="habit-month-day'+(on?' on':'')+(!scheduled?' muted':'')+'" data-date="'+key+'" data-habit="'+h.id+'" '+(!scheduled?'disabled':'')+'>'+d.getDate()+'</button>';}).join('');const scheduleLabel=(Array.isArray(h.days)&&h.days.length&&h.days[0]!=='daily')?h.days.map(x=>x.toUpperCase()).join(' · '):'Every day';row.innerHTML='<div class="habit-progress-head"><button type="button" class="habit-order-handle" title="Drag to reorder habits" aria-label="Drag to reorder '+escapeHTML(h.name)+'">⠿</button><div class="heat-name">'+escapeHTML(h.name)+(h.time||Object.keys(h.weeklyTimes||{}).length?'<div class="habit-time">'+(Object.keys(h.weeklyTimes||{}).length?'Custom times by day':formatHabitTime(h.time))+'</div>':'')+'<div class="habit-schedule">'+scheduleLabel+'</div></div><div class="heat-streak"><b>'+streak+'</b><span>day streak</span></div></div><div class="habit-week">'+dayCells+'</div><button type="button" class="btn ghost small habit-history-toggle" data-history="'+h.id+'">View 30-day history</button><div class="habit-month" data-month="'+h.id+'" hidden>'+monthCells+'</div><div class="item-actions"><button class="btn gray small" data-edit-habit="'+h.id+'">Edit</button><button class="btn gray small" data-del-habit="'+h.id+'">Delete</button></div>';wrap.appendChild(row);});
@@ -657,7 +659,12 @@
       document.addEventListener('pointerup',finish,{once:true});
       document.addEventListener('pointercancel',finish,{once:true});
     }));
-    wrap.querySelectorAll('[data-history]').forEach(btn=>btn.onclick=()=>{const box=wrap.querySelector('[data-month="'+btn.dataset.history+'"]');box.hidden=!box.hidden;btn.textContent=box.hidden?'View 30-day history':'Hide 30-day history';});
+    wrap.querySelectorAll('[data-history]').forEach(btn=>{
+      const box=wrap.querySelector('[data-month="'+btn.dataset.history+'"]');
+      box.hidden=!expandedHistoryIds.has(btn.dataset.history);
+      btn.textContent=box.hidden?'View 30-day history':'Hide 30-day history';
+      btn.onclick=()=>{box.hidden=!box.hidden;btn.textContent=box.hidden?'View 30-day history':'Hide 30-day history';};
+    });
     wrap.querySelectorAll('[data-edit-habit]').forEach(btn=>btn.addEventListener('click',()=>{
       const h=state.habits.find(x=>x.id===btn.dataset.editHabit);if(!h)return;
       document.getElementById('habit-edit-id').value=h.id;document.getElementById('habit-in-name').value=h.name;document.getElementById('habit-in-time').value=h.time||'';renderHabitWeeklyTimes(h);
@@ -1221,7 +1228,8 @@
     document.getElementById('habit-in-name').value=''; document.getElementById('habit-in-time').value=''; renderHabitWeeklyTimes({}); document.getElementById('habit-edit-id').value='';
     document.querySelectorAll('#habit-day-picker .exercise-chip').forEach(b=>b.classList.remove('active'));
     document.getElementById('habit-day-picker [data-day="daily"]').classList.add('active');
-    document.getElementById('habit-form').style.display='none';
+    if(editId) document.getElementById('habit-form').style.display='none';
+    else {document.getElementById('habit-form').style.display='block';document.getElementById('habit-in-name').focus();}
     showToast(editId?'Habit updated.':'Habit added.');
   });
 
