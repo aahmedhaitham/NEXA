@@ -438,3 +438,10 @@
 
 /* Settings: keep the expanded Classes row visually continuous with its description. */
 #settings-sub-general .settings-classes-item[open]>summary{border-bottom:0;}
+
+
+/* Settings footer and refresh loading state */
+.settings-app-version{margin:18px 0 4px;text-align:center;color:var(--muted);font-size:11px;letter-spacing:.04em;opacity:.8;}
+.settings-loading-spinner{display:block;width:21px;height:21px;border:2px solid rgba(255,255,255,.25);border-top-color:var(--coral);border-radius:50%;animation:nexa-spin .7s linear infinite;}
+#refresh-app-btn:disabled{cursor:wait;opacity:.8;}
+@keyframes nexa-spin{to{transform:rotate(360deg);}}
