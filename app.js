@@ -680,15 +680,16 @@
         input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();finish(true);}if(e.key==='Escape')finish(false);});
         input.addEventListener('blur',()=>finish(true));
       };
-      heading.onclick=rename;
-      const renameIcon=iconButton('Rename subject','✎');renameIcon.onclick=rename;
+      heading.onclick=null;
+      heading.ondblclick=rename;
+      heading.title='Double-tap or double-click to rename subject';
       const delSubject=iconButton('Delete subject','×');delSubject.classList.add('subject-delete-btn');
       delSubject.onclick=async()=>{
         if(!await nexaConfirm('Delete subject?','Delete "'+s.name+'" and all its tasks?'))return;
         state.subjects=state.subjects.filter(x=>x.id!==s.id);state.subjectItems=state.subjectItems.filter(x=>x.subjectId!==s.id);
         await save('subjects',state.subjects);await save('subjectItems',state.subjectItems);renderSubjectsPage();renderStatbar();
       };
-      head.append(heading,count,renameIcon,delSubject);card.appendChild(head);
+      head.append(heading,count,delSubject);card.appendChild(head);
       const itemsWrap=document.createElement('div');itemsWrap.className='subject-items';
       items.forEach(item=>{
         const row=document.createElement('div');row.className='subject-task-row';row.dataset.subjectItemId=item.id;
@@ -701,8 +702,18 @@
           e.preventDefault();
           pointerDragStarted=true;
           row.classList.add('is-dragging');
+          const rect=row.getBoundingClientRect();
+          const preview=row.cloneNode(true);
+          preview.classList.add('subject-drag-preview');
+          preview.style.width=rect.width+'px';
+          preview.style.left=(e.clientX+10)+'px';
+          preview.style.top=(e.clientY+10)+'px';
+          preview.style.maxWidth='calc(100vw - 20px)';
+          document.body.appendChild(preview);
           const move=ev=>{
             if(!pointerDragStarted)return;
+            preview.style.left=Math.max(4,Math.min(window.innerWidth-rect.width-4,ev.clientX+10))+'px';
+            preview.style.top=(ev.clientY+12)+'px';
             const target=document.elementFromPoint(ev.clientX,ev.clientY);
             document.querySelectorAll('.subject-task-row').forEach(r=>r.classList.remove('drop-target'));
             const targetRow=target&&target.closest('.subject-task-row');
@@ -717,6 +728,7 @@
             document.removeEventListener('pointermove',move);
             document.removeEventListener('pointerup',finish);
             row.classList.remove('is-dragging');
+            preview.remove();
             document.querySelectorAll('.subject-task-row').forEach(r=>r.classList.remove('drop-target'));
             document.querySelectorAll('.subject-card').forEach(c=>c.classList.remove('subject-card-drop'));
             const target=document.elementFromPoint(ev.clientX,ev.clientY);
