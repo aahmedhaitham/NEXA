@@ -1019,7 +1019,7 @@
     const start = document.getElementById('class-in-start').value;
     const end = document.getElementById('class-in-end').value;
     const selectedDays = Array.from(document.querySelectorAll('#class-day-picker .exercise-chip.active')).map(b=>b.dataset.day);
-    if(type!=='gap'&&!subject){showToast('Enter a subject name.');document.getElementById('class-in-subject').focus();return;}if(!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(start)||!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(end)){showToast('Choose both a start and end time.');return;}const startMinutes=Number(start.slice(0,2))*60+Number(start.slice(3)),endMinutes=Number(end.slice(0,2))*60+Number(end.slice(3));if(endMinutes<=startMinutes){showToast('End time must be after start time.');document.getElementById('class-in-end').focus();return;}if(!selectedDays.length){showToast('Choose at least one day.');return;}
+    if(type!=='gap'&&!subject){showToast('Enter a subject name.');document.getElementById('class-in-subject').focus();return;}if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(start)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(end)){showToast('Choose both a start and end time.');return;}const startMinutes=Number(start.slice(0,2))*60+Number(start.slice(3)),endMinutes=Number(end.slice(0,2))*60+Number(end.slice(3));if(endMinutes<=startMinutes){showToast('End time must be after start time.');document.getElementById('class-in-end').focus();return;}if(!selectedDays.length){showToast('Choose at least one day.');return;}
     const room = document.getElementById('class-in-room').value.trim();
     const notes = document.getElementById('class-in-notes').value.trim();
     const editId=document.getElementById('class-edit-id').value;
