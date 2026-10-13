@@ -351,3 +351,18 @@
   .subject-drag-handle{width:34px;flex-basis:34px;height:44px;}
   .subject-task-title{font-size:15px;}
 }
+
+
+/* Final tuning: compact subject tasks and a lifted drag ghost */
+.subject-task-row{min-height:42px;padding:5px 0;gap:8px;}
+.subject-task-title{font-size:14px;line-height:1.35;padding:7px 0;}
+.subject-drag-handle{width:30px;flex-basis:30px;height:38px;font-size:22px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;}
+.subject-drag-preview{position:fixed!important;z-index:99999!important;pointer-events:none!important;display:flex!important;align-items:center;gap:8px;padding:8px 12px!important;border:1px solid var(--coral)!important;border-radius:12px!important;background:var(--panel,#202127)!important;box-shadow:0 12px 32px rgba(0,0,0,.4)!important;opacity:.98!important;transform:rotate(1deg) scale(1.02);overflow:hidden;}
+.subject-drag-preview .subject-drag-handle{cursor:grabbing;}
+.subject-task-row.is-dragging{opacity:.2;background:rgba(255,255,255,.03);}
+.subject-title{font-size:16px;}
+@media(max-width:480px){
+  .subject-task-row{min-height:40px;padding:4px 0;}
+  .subject-task-title{font-size:14px;padding:7px 0;}
+  .subject-drag-handle{width:30px;flex-basis:30px;height:38px;}
+}
