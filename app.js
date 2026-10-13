@@ -528,7 +528,35 @@
     const wrap = document.getElementById('habit-grid'); wrap.innerHTML = '';
     if(!state.habits.length){ wrap.innerHTML='<p>No habits yet.</p>'; return; }
     const week=[];{const today=new Date();today.setHours(12,0,0,0);const start=new Date(today);start.setDate(today.getDate()-((today.getDay()+1)%7));for(let i=0;i<7;i++){const d=new Date(start);d.setDate(start.getDate()+i);week.push(d);}}const month=[];for(let i=29;i>=0;i--){const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()-i);month.push(d);}
-    state.habits.forEach(h=>{const row=document.createElement('div');row.className='habit-progress-card';const streak=habitStreak(h);const dayCells=week.map(d=>{const key=dateKey(d),scheduled=habitIsScheduled(h,d),on=!!((state.habitLogs[key]||{})[h.id]);return '<button type="button" class="habit-day'+(on?' on':'')+(!scheduled?' muted':'')+(key===todayKey()?' today':'')+'" data-date="'+key+'" data-habit="'+h.id+'" '+(!scheduled?'disabled':'')+'><span>'+['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]+'</span><b>'+(on?'✓':d.getDate())+'</b></button>';}).join('');const monthCells=month.map(d=>{const key=dateKey(d),scheduled=habitIsScheduled(h,d),on=!!((state.habitLogs[key]||{})[h.id]);return '<button type="button" title="'+key+'" class="habit-month-day'+(on?' on':'')+(!scheduled?' muted':'')+'" data-date="'+key+'" data-habit="'+h.id+'" '+(!scheduled?'disabled':'')+'>'+d.getDate()+'</button>';}).join('');const scheduleLabel=(Array.isArray(h.days)&&h.days.length&&h.days[0]!=='daily')?h.days.map(x=>x.toUpperCase()).join(' · '):'Every day';row.innerHTML='<div class="habit-progress-head"><div class="heat-name">'+escapeHTML(h.name)+(h.time||Object.keys(h.weeklyTimes||{}).length?'<div class="habit-time">'+(Object.keys(h.weeklyTimes||{}).length?'Custom times by day':formatHabitTime(h.time))+'</div>':'')+'<div class="habit-schedule">'+scheduleLabel+'</div></div><div class="heat-streak"><b>'+streak+'</b><span>day streak</span></div></div><div class="habit-week">'+dayCells+'</div><button type="button" class="btn ghost small habit-history-toggle" data-history="'+h.id+'">View 30-day history</button><div class="habit-month" data-month="'+h.id+'" hidden>'+monthCells+'</div><div class="item-actions"><button class="btn gray small" data-edit-habit="'+h.id+'">Edit</button><button class="btn gray small" data-del-habit="'+h.id+'">Delete</button></div>';wrap.appendChild(row);});
+    state.habits.forEach(h=>{const row=document.createElement('div');row.className='habit-progress-card';row.dataset.habitId=h.id;const streak=habitStreak(h);const dayCells=week.map(d=>{const key=dateKey(d),scheduled=habitIsScheduled(h,d),on=!!((state.habitLogs[key]||{})[h.id]);return '<button type="button" class="habit-day'+(on?' on':'')+(!scheduled?' muted':'')+(key===todayKey()?' today':'')+'" data-date="'+key+'" data-habit="'+h.id+'" '+(!scheduled?'disabled':'')+'><span>'+['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]+'</span><b>'+(on?'✓':d.getDate())+'</b></button>';}).join('');const monthCells=month.map(d=>{const key=dateKey(d),scheduled=habitIsScheduled(h,d),on=!!((state.habitLogs[key]||{})[h.id]);return '<button type="button" title="'+key+'" class="habit-month-day'+(on?' on':'')+(!scheduled?' muted':'')+'" data-date="'+key+'" data-habit="'+h.id+'" '+(!scheduled?'disabled':'')+'>'+d.getDate()+'</button>';}).join('');const scheduleLabel=(Array.isArray(h.days)&&h.days.length&&h.days[0]!=='daily')?h.days.map(x=>x.toUpperCase()).join(' · '):'Every day';row.innerHTML='<div class="habit-progress-head"><button type="button" class="habit-order-handle" title="Drag to reorder habits" aria-label="Drag to reorder '+escapeHTML(h.name)+'">⠿</button><div class="heat-name">'+escapeHTML(h.name)+(h.time||Object.keys(h.weeklyTimes||{}).length?'<div class="habit-time">'+(Object.keys(h.weeklyTimes||{}).length?'Custom times by day':formatHabitTime(h.time))+'</div>':'')+'<div class="habit-schedule">'+scheduleLabel+'</div></div><div class="heat-streak"><b>'+streak+'</b><span>day streak</span></div></div><div class="habit-week">'+dayCells+'</div><button type="button" class="btn ghost small habit-history-toggle" data-history="'+h.id+'">View 30-day history</button><div class="habit-month" data-month="'+h.id+'" hidden>'+monthCells+'</div><div class="item-actions"><button class="btn gray small" data-edit-habit="'+h.id+'">Edit</button><button class="btn gray small" data-del-habit="'+h.id+'">Delete</button></div>';wrap.appendChild(row);});
+    wrap.querySelectorAll('.habit-order-handle').forEach(grip=>grip.addEventListener('pointerdown',e=>{
+      if(e.button!==0&&e.pointerType==='mouse')return;
+      e.preventDefault();
+      const row=grip.closest('.habit-progress-card');const startY=e.clientY;let moved=false;
+      const move=ev=>{
+        if(Math.abs(ev.clientY-startY)>5)moved=true;
+        if(!moved)return;
+        const target=document.elementFromPoint(ev.clientX,ev.clientY);
+        const targetRow=target&&target.closest('.habit-progress-card[data-habit-id]');
+        wrap.querySelectorAll('.habit-progress-card.habit-drop-target').forEach(n=>n.classList.remove('habit-drop-target'));
+        if(targetRow&&targetRow!==row)targetRow.classList.add('habit-drop-target');
+      };
+      const finish=async ev=>{
+        document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',finish);document.removeEventListener('pointercancel',finish);
+        wrap.querySelectorAll('.habit-progress-card.habit-drop-target').forEach(n=>n.classList.remove('habit-drop-target'));
+        if(!moved)return;
+        const target=document.elementFromPoint(ev.clientX,ev.clientY);
+        const targetRow=target&&target.closest('.habit-progress-card[data-habit-id]');
+        if(!targetRow||targetRow===row)return;
+        const from=state.habits.findIndex(x=>x.id===row.dataset.habitId),to=state.habits.findIndex(x=>x.id===targetRow.dataset.habitId);
+        if(from<0||to<0)return;
+        const item=state.habits.splice(from,1)[0];state.habits.splice(to,0,item);
+        renderHabitGrid();renderDashboard();
+        await save('habits',state.habits);
+        showToast('Habit order updated.');
+      };
+      document.addEventListener('pointermove',move,{passive:true});document.addEventListener('pointerup',finish,{once:true});document.addEventListener('pointercancel',finish,{once:true});
+    }));
     wrap.querySelectorAll('[data-history]').forEach(btn=>btn.onclick=()=>{const box=wrap.querySelector('[data-month="'+btn.dataset.history+'"]');box.hidden=!box.hidden;btn.textContent=box.hidden?'View 30-day history':'Hide 30-day history';});
     wrap.querySelectorAll('[data-edit-habit]').forEach(btn=>btn.addEventListener('click',()=>{
       const h=state.habits.find(x=>x.id===btn.dataset.editHabit);if(!h)return;
@@ -940,16 +968,16 @@
     classes.forEach(c=>{
       const row = document.createElement('div');
       const status = classStatus(c), passed = status?.label==='PASSED';
-      row.className = 'class-row '+c.type+(passed?' passed':'');
+      row.className = 'class-row dash-class-row '+c.type+(passed?' passed':'');
       row.style.marginBottom = '8px';
       const metaBits = [];
       if(c.room) metaBits.push('ROOM '+escapeHTML(c.room));
       const isGap=c.type==='gap';
       row.innerHTML =
-        '<div style="flex:1;min-width:0;">'+(isGap?'':'<div class="csubject">'+escapeHTML(c.subject)+'</div>')+
-        (metaBits.length?'<div class="croom">'+metaBits.join(' \\u00b7 ')+'</div>':'')+
+        '<div class="dash-class-main">'+(isGap?'':'<div class="csubject">'+escapeHTML(c.subject)+'</div>')+
+        (metaBits.length?'<div class="croom">'+metaBits.join(' · ')+'</div>':'')+
         '<span class="badge '+c.type+'" style="display:inline-block;margin-top:'+(isGap?'0':'7')+'px;">'+(isGap?'FREE PERIOD':escapeHTML(c.type))+'</span></div>'+
-        '<div class="ctime" style="width:auto;min-width:92px;text-align:right;align-self:center;color:var(--ink);font-size:13px;">'+formatClassTime(c.start)+' – '+formatClassTime(c.end)+'</div>';
+        '<div class="ctime dash-class-time">'+formatClassTime(c.start)+' – '+formatClassTime(c.end)+'</div>';
       el.appendChild(row);
     });
   }
