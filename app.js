@@ -73,6 +73,7 @@
     state.classSchedule = await safeGet('classSchedule', []);
     state.subjects = await safeGet('subjects', []);
     state.subjectItems = await safeGet('subjectItems', []);
+    if(!Array.isArray(state.config.classSubjectSuggestions)){state.config.classSubjectSuggestions=state.subjects.map(s=>s.name);await save('config',state.config);}
   }
 
   function escapeHTML(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
@@ -197,6 +198,7 @@
   mainScroll.addEventListener('touchmove',e=>{
     if(e.touches.length!==1) return;
     const y=e.touches[0].clientY, dy=y-mainTouchY;
+    if(document.activeElement&&document.activeElement.matches('input[type="time"]')){mainTouchY=y;return;}
     const atTop=mainScroll.scrollTop<=0;
     const atBottom=mainScroll.scrollTop+mainScroll.clientHeight>=mainScroll.scrollHeight-1;
     if((atTop&&dy>0)||(atBottom&&dy<0)) e.preventDefault();
@@ -469,16 +471,17 @@
   function renderTaskList(){
     const wrap = document.getElementById('task-list');
     wrap.innerHTML = '';
-    const list = state.tasks.slice().sort((a,b)=>(a.done-b.done));
+    const list = state.tasks.slice().sort((a,b)=>(a.done-b.done)||state.tasks.indexOf(a)-state.tasks.indexOf(b));
     if(!list.length){ wrap.innerHTML = '<div class="empty-state">No tasks yet — enjoy the clear list.</div>'; return; }
     list.forEach(t=>{
-      const row = document.createElement('div'); row.className='task-row';
+      const row = document.createElement('div'); row.className='task-row'; row.dataset.taskId=t.id;
+      const grip=document.createElement('button');grip.type='button';grip.className='task-drag-handle';grip.textContent='⠿';grip.title='Drag to reorder';grip.setAttribute('aria-label','Drag to reorder task');grip.addEventListener('pointerdown',e=>{if(e.button!==0&&e.pointerType==='mouse')return;e.preventDefault();const startY=e.clientY;let moved=false;const move=ev=>{if(Math.abs(ev.clientY-startY)>5)moved=true;if(!moved)return;const target=document.elementFromPoint(ev.clientX,ev.clientY);const targetRow=target&&target.closest('.task-row[data-task-id]');document.querySelectorAll('.task-row.task-drop-target').forEach(n=>n.classList.remove('task-drop-target'));if(targetRow&&targetRow!==row&&targetRow.parentElement===row.parentElement)targetRow.classList.add('task-drop-target');};const finish=async ev=>{document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',finish);document.removeEventListener('pointercancel',finish);document.querySelectorAll('.task-row.task-drop-target').forEach(n=>n.classList.remove('task-drop-target'));if(!moved)return;const target=document.elementFromPoint(ev.clientX,ev.clientY);const targetRow=target&&target.closest('.task-row[data-task-id]');if(!targetRow||targetRow===row)return;const from=state.tasks.findIndex(x=>x.id===t.id);const targetIndex=state.tasks.findIndex(x=>x.id===targetRow.dataset.taskId);if(from<0||targetIndex<0||state.tasks[from].done!==state.tasks[targetIndex].done)return;const movedTask=state.tasks.splice(from,1)[0];state.tasks.splice(state.tasks.findIndex(x=>x.id===targetRow.dataset.taskId),0,movedTask);await save('tasks',state.tasks);renderTaskList();};document.addEventListener('pointermove',move,{passive:true});document.addEventListener('pointerup',finish,{once:true});document.addEventListener('pointercancel',finish,{once:true});});
       const check = document.createElement('button'); check.className='checkbtn'+(t.done?' checked':''); check.textContent=t.done?'\u2713':'';
       check.onclick = async ()=>{ t.done=!t.done; haptic(); await save('tasks', state.tasks); renderTaskList(); renderStatbar(); };
       const body = document.createElement('div'); body.style.flex='1';
       const subDone = (t.subtasks||[]).filter(s=>s.done).length;
       body.innerHTML = '<div class="ttitle'+(t.done?' done':'')+'">'+escapeHTML(t.title)+'</div>'+((t.subtasks&&t.subtasks.length)?'<div class="task-meta"><span>'+subDone+'/'+t.subtasks.length+' subtasks</span></div>':'');
-      row.appendChild(check); row.appendChild(body);
+      row.append(grip,check,body);
       const edit = document.createElement('button'); edit.className='btn gray small'; edit.textContent='Edit';
       edit.onclick=e=>{e.stopPropagation();openTaskEdit(t);};
       row.appendChild(edit);
@@ -701,7 +704,7 @@
         state.subjects=state.subjects.filter(x=>x.id!==s.id);state.subjectItems=state.subjectItems.filter(x=>x.subjectId!==s.id);
         await save('subjects',state.subjects);await save('subjectItems',state.subjectItems);renderSubjectsPage();renderStatbar();
       };
-      head.append(heading,count,delSubject);card.appendChild(head);
+      const subjectGrip=iconButton('Drag to reorder subject','⠿');subjectGrip.classList.add('subject-list-drag-handle');subjectGrip.addEventListener('pointerdown',e=>{if(e.button!==0&&e.pointerType==='mouse')return;e.preventDefault();const startY=e.clientY;let moved=false;const move=ev=>{if(Math.abs(ev.clientY-startY)>5)moved=true;if(!moved)return;const target=document.elementFromPoint(ev.clientX,ev.clientY);const targetCard=target&&target.closest('.subject-card');document.querySelectorAll('.subject-card.subject-card-drop').forEach(n=>n.classList.remove('subject-card-drop'));if(targetCard&&targetCard!==card)targetCard.classList.add('subject-card-drop');};const finish=async ev=>{document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',finish);document.removeEventListener('pointercancel',finish);document.querySelectorAll('.subject-card.subject-card-drop').forEach(n=>n.classList.remove('subject-card-drop'));if(!moved)return;const target=document.elementFromPoint(ev.clientX,ev.clientY);const targetCard=target&&target.closest('.subject-card');if(!targetCard||targetCard===card)return;const from=state.subjects.findIndex(x=>x.id===s.id);const targetIndex=state.subjects.findIndex(x=>x.id===targetCard.dataset.subjectId);if(from<0||targetIndex<0)return;const dragged=state.subjects.splice(from,1)[0];state.subjects.splice(state.subjects.findIndex(x=>x.id===targetCard.dataset.subjectId),0,dragged);await save('subjects',state.subjects);renderSubjectsPage();};document.addEventListener('pointermove',move,{passive:true});document.addEventListener('pointerup',finish,{once:true});document.addEventListener('pointercancel',finish,{once:true});});head.append(heading,count,subjectGrip,delSubject);card.appendChild(head);
       const itemsWrap=document.createElement('div');itemsWrap.className='subject-items';
       items.forEach(item=>{
         const row=document.createElement('div');row.className='subject-task-row';row.dataset.subjectItemId=item.id;
@@ -829,29 +832,28 @@
     row.querySelector('.csubject').parentElement.onclick=()=>openClassEdit(c);
     wrap.appendChild(row);
   }
-  function renderClassesPage(){
-    const datalist = document.getElementById('subject-names');
-    if(datalist) datalist.innerHTML = state.subjects.map(s=>'<option value="'+escapeHTML(s.name)+'">').join('');
-    const wrap = document.getElementById('class-days-wrap'); wrap.innerHTML = '';
-    const daily = state.classSchedule.filter(c=>c.day==='daily').sort((a,b)=>a.start.localeCompare(b.start));
-    if(daily.length){
-      const header = document.createElement('div'); header.className='day-header';
-      header.innerHTML = '<span>Every day</span><span>'+daily.length+' class'+(daily.length===1?'':'es')+'</span>';
-      wrap.appendChild(header);
-      daily.forEach(c=>renderClassRow(wrap, c));
-    }
-    DAYS.forEach(day=>{
-      const classes = state.classSchedule.filter(c=>c.day===day).sort((a,b)=>a.start.localeCompare(b.start));
-      if(!classes.length) return;
-      const header = document.createElement('div'); header.className='day-header';
-      header.innerHTML = '<span>'+DAY_LABELS[day]+'</span><span>'+classes.length+' class'+(classes.length===1?'':'es')+'</span>';
-      wrap.appendChild(header);
-      classes.forEach(c=>renderClassRow(wrap, c));
-    });
-    if(!state.classSchedule.length) wrap.innerHTML = '<p>No classes added yet.</p>';
+  function renderClassSubjectSuggestions(){
+    const wrap=document.getElementById('class-subject-suggestions');if(!wrap)return;
+    const input=document.getElementById('class-in-subject');const query=(input.value||'').trim().toLowerCase();
+    const names=Array.isArray(state.config.classSubjectSuggestions)?state.config.classSubjectSuggestions:[];
+    const shown=names.filter(name=>!query||name.toLowerCase().includes(query));wrap.innerHTML='';
+    if(!shown.length){wrap.style.display='none';return;}wrap.style.display='flex';
+    shown.forEach(name=>{const chip=document.createElement('span');chip.className='class-subject-suggestion';const pick=document.createElement('button');pick.type='button';pick.className='class-subject-pick';pick.textContent=name;pick.onclick=()=>{input.value=name;wrap.style.display='none';};const remove=document.createElement('button');remove.type='button';remove.className='class-subject-remove';remove.textContent='×';remove.title='Remove '+name+' from quick suggestions';remove.setAttribute('aria-label','Remove '+name+' suggestion');remove.onclick=async()=>{state.config.classSubjectSuggestions=names.filter(n=>n!==name);await save('config',state.config);renderClassSubjectSuggestions();showToast('Removed '+name+' from suggestions.');};chip.append(pick,remove);wrap.appendChild(chip);});
   }
-  document.getElementById('class-new-btn').addEventListener('click', ()=>{document.getElementById('class-edit-id').value='';document.getElementById('class-form').style.display='block';});
-  document.getElementById('class-cancel-btn').addEventListener('click', ()=>{ document.getElementById('class-form').style.display='none'; });
+  document.getElementById('class-in-subject').addEventListener('input',renderClassSubjectSuggestions);
+  document.getElementById('class-in-subject').addEventListener('focus',renderClassSubjectSuggestions);
+  document.getElementById('class-in-type').addEventListener('change',()=>{const gap=document.getElementById('class-in-type').value==='gap';document.getElementById('class-subject-label').textContent=gap?'Label (optional)':'Subject';document.getElementById('class-in-subject').placeholder=gap?'Optional — defaults to Free period':'e.g. Mathematics';document.getElementById('class-subject-suggestions').style.display=gap?'none':'';});
+  document.addEventListener('click',e=>{const wrap=document.getElementById('class-subject-suggestions');if(wrap&&!wrap.contains(e.target)&&e.target.id!=='class-in-subject')wrap.style.display='none';});
+
+  function renderClassesPage(){
+    renderClassSubjectSuggestions();
+    const wrap=document.getElementById('class-days-wrap');wrap.innerHTML='';
+    const makeGroup=(label,items,day)=>{const section=document.createElement('section');section.className='class-day-group';const header=document.createElement('button');header.type='button';header.className='day-header';header.innerHTML='<span>'+label+'</span><span>'+items.length+' item'+(items.length===1?'':'s')+'　⌄</span>';const list=document.createElement('div');list.className='class-day-items';if(items.length)items.forEach(item=>renderClassRow(list,item));else{const empty=document.createElement('div');empty.className='class-day-empty';empty.textContent='No classes scheduled';const add=document.createElement('button');add.type='button';add.className='btn gray small';add.textContent='+ Add class';add.onclick=()=>{document.getElementById('class-edit-id').value='';['class-in-subject','class-in-room','class-in-notes','class-in-start','class-in-end'].forEach(id=>document.getElementById(id).value='');document.getElementById('class-in-type').value='lecture';document.getElementById('class-form').style.display='block';document.querySelectorAll('#class-day-picker .exercise-chip').forEach(b=>b.classList.toggle('active',b.dataset.day===day));};empty.appendChild(add);list.appendChild(empty);}header.onclick=()=>{list.hidden=!list.hidden;header.classList.toggle('collapsed',list.hidden);};section.append(header,list);wrap.appendChild(section);};
+    const daily=state.classSchedule.filter(c=>c.day==='daily').sort((a,b)=>a.start.localeCompare(b.start));if(daily.length)makeGroup('Every day',daily,'daily');
+    DAYS.forEach(day=>makeGroup(DAY_LABELS[day],state.classSchedule.filter(c=>c.day===day).sort((a,b)=>a.start.localeCompare(b.start)),day));
+  }
+  document.getElementById('class-new-btn').addEventListener('click', ()=>{document.getElementById('class-edit-id').value='';['class-in-subject','class-in-room','class-in-notes','class-in-start','class-in-end'].forEach(id=>document.getElementById(id).value='');document.getElementById('class-in-type').value='lecture';document.querySelectorAll('#class-day-picker .exercise-chip').forEach(b=>b.classList.remove('active'));document.getElementById('class-form').style.display='block';renderClassSubjectSuggestions();});
+  document.getElementById('class-cancel-btn').addEventListener('click', ()=>{document.getElementById('class-form').style.display='none';document.getElementById('class-subject-suggestions').style.display='none';});
   document.querySelectorAll('#class-day-picker .exercise-chip').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       if(btn.dataset.day==='daily'){
@@ -865,29 +867,32 @@
     });
   });
   document.getElementById('class-save-btn').addEventListener('click', async ()=>{
-    const subject = document.getElementById('class-in-subject').value.trim();
+    const type = document.getElementById('class-in-type').value;
+    const subjectInput = document.getElementById('class-in-subject').value.trim();
+    const subject = type==='gap'?(subjectInput||'Free period'):subjectInput;
     const start = document.getElementById('class-in-start').value;
     const end = document.getElementById('class-in-end').value;
     const selectedDays = Array.from(document.querySelectorAll('#class-day-picker .exercise-chip.active')).map(b=>b.dataset.day);
-    if(!subject || !start || !end || !selectedDays.length){ showToast('Fill in subject, time, and pick at least one day.'); return; }
+    if((type!=='gap'&&!subject)||!start||!end||end<=start||!selectedDays.length){showToast('Fill in the required fields, choose a valid time range, and pick at least one day.');return;}
     const room = document.getElementById('class-in-room').value.trim();
     const notes = document.getElementById('class-in-notes').value.trim();
-    const type = document.getElementById('class-in-type').value;
     const editId=document.getElementById('class-edit-id').value;
     if(editId){const existing=state.classSchedule.find(x=>x.id===editId);if(existing)Object.assign(existing,{subject,room,notes,day:selectedDays[0],type,start,end});}
     else selectedDays.forEach((day,i)=>{state.classSchedule.push({id:'c-'+Date.now()+'-'+i,subject,room,notes,day,type,start,end});});
     await save('classSchedule', state.classSchedule);
-    if(!state.subjects.find(s=>s.name.toLowerCase()===subject.toLowerCase())){
+    if(type!=='gap'&&!state.subjects.find(s=>s.name.toLowerCase()===subject.toLowerCase())){
       state.subjects.push({id:'subj-'+Date.now(), name:subject});
       await save('subjects', state.subjects);
     }
+    state.config.classSubjectSuggestions=Array.isArray(state.config.classSubjectSuggestions)?state.config.classSubjectSuggestions:[];
+    if(type!=='gap'&&!state.config.classSubjectSuggestions.some(n=>n.toLowerCase()===subject.toLowerCase())){state.config.classSubjectSuggestions.push(subject);await save('config',state.config);}
     ['class-in-subject','class-in-room','class-in-notes','class-in-start','class-in-end'].forEach(id=>document.getElementById(id).value='');
     document.querySelectorAll('#class-day-picker .exercise-chip').forEach(b=>b.classList.remove('active'));
     document.getElementById('class-form').style.display='none';
     renderClassesPage(); showToast('Class added, and linked to a Subject automatically.');
   });
   document.getElementById('class-make-subjects-btn').addEventListener('click', async ()=>{
-    const names = Array.from(new Set(state.classSchedule.map(c=>c.subject)));
+    const names = Array.from(new Set(state.classSchedule.filter(c=>c.type!=='gap').map(c=>c.subject)));
     let added = 0;
     names.forEach(name=>{
       if(!state.subjects.find(s=>s.name.toLowerCase()===name.toLowerCase())){
@@ -1058,7 +1063,7 @@
     localStorage.clear();
     state = {exercises:JSON.parse(JSON.stringify(DEFAULT_EXERCISES)), logs:[], events:[], nutrition:{}, tasks:[], habits:JSON.parse(JSON.stringify(DEFAULT_HABITS)), habitLogs:{},
       classSchedule:[], subjects:[], subjectItems:[], health:{steps:{},sleep:{},weight:[]},prayerLogs:{},customReminders:[],
-      config:{plan:Object.assign({},DEFAULT_PLAN), settings:{calendarReminderHours:24,notifications:{classes:true,habits:true,prayer:true,events:true},notificationLead:{classes:15,habits:0,prayer:0,events:0}}, dashboardOrder:['classes','train','nutrition','habits','tasks','calendar','prayer']}};
+      config:{plan:Object.assign({},DEFAULT_PLAN), settings:{calendarReminderHours:24,notifications:{classes:true,habits:true,prayer:true,events:true},notificationLead:{classes:15,habits:0,prayer:0,events:0}}, dashboardOrder:['classes','train','nutrition','habits','tasks','calendar','prayer'],classSubjectSuggestions:[]}};
     for(const k of ['exercises','logs','events','nutrition','tasks','habits','habitLogs','prayerLogs','customReminders','classSchedule','subjects','subjectItems','health','config']) await save(k, state[k]);
     showToast('All data reset.'); gotoPage('today');
   });
