@@ -531,31 +531,68 @@
     state.habits.forEach(h=>{const row=document.createElement('div');row.className='habit-progress-card';row.dataset.habitId=h.id;const streak=habitStreak(h);const dayCells=week.map(d=>{const key=dateKey(d),scheduled=habitIsScheduled(h,d),on=!!((state.habitLogs[key]||{})[h.id]);return '<button type="button" class="habit-day'+(on?' on':'')+(!scheduled?' muted':'')+(key===todayKey()?' today':'')+'" data-date="'+key+'" data-habit="'+h.id+'" '+(!scheduled?'disabled':'')+'><span>'+['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]+'</span><b>'+(on?'✓':d.getDate())+'</b></button>';}).join('');const monthCells=month.map(d=>{const key=dateKey(d),scheduled=habitIsScheduled(h,d),on=!!((state.habitLogs[key]||{})[h.id]);return '<button type="button" title="'+key+'" class="habit-month-day'+(on?' on':'')+(!scheduled?' muted':'')+'" data-date="'+key+'" data-habit="'+h.id+'" '+(!scheduled?'disabled':'')+'>'+d.getDate()+'</button>';}).join('');const scheduleLabel=(Array.isArray(h.days)&&h.days.length&&h.days[0]!=='daily')?h.days.map(x=>x.toUpperCase()).join(' · '):'Every day';row.innerHTML='<div class="habit-progress-head"><button type="button" class="habit-order-handle" title="Drag to reorder habits" aria-label="Drag to reorder '+escapeHTML(h.name)+'">⠿</button><div class="heat-name">'+escapeHTML(h.name)+(h.time||Object.keys(h.weeklyTimes||{}).length?'<div class="habit-time">'+(Object.keys(h.weeklyTimes||{}).length?'Custom times by day':formatHabitTime(h.time))+'</div>':'')+'<div class="habit-schedule">'+scheduleLabel+'</div></div><div class="heat-streak"><b>'+streak+'</b><span>day streak</span></div></div><div class="habit-week">'+dayCells+'</div><button type="button" class="btn ghost small habit-history-toggle" data-history="'+h.id+'">View 30-day history</button><div class="habit-month" data-month="'+h.id+'" hidden>'+monthCells+'</div><div class="item-actions"><button class="btn gray small" data-edit-habit="'+h.id+'">Edit</button><button class="btn gray small" data-del-habit="'+h.id+'">Delete</button></div>';wrap.appendChild(row);});
     wrap.querySelectorAll('.habit-order-handle').forEach(grip=>grip.addEventListener('pointerdown',e=>{
       if(e.button!==0&&e.pointerType==='mouse')return;
+      const row=grip.closest('.habit-progress-card[data-habit-id]');
+      if(!row)return;
       e.preventDefault();
-      const row=grip.closest('.habit-progress-card');const startY=e.clientY;let moved=false;
+      const rect=row.getBoundingClientRect();
+      const offsetX=e.clientX-rect.left,offsetY=e.clientY-rect.top;
+      let moved=false,finished=false,ghost=null,targetRow=null;
+      const clearTargets=()=>wrap.querySelectorAll('.habit-progress-card.habit-drop-target').forEach(n=>n.classList.remove('habit-drop-target'));
       const move=ev=>{
-        if(Math.abs(ev.clientY-startY)>5)moved=true;
+        if(finished)return;
+        if(Math.abs(ev.clientY-e.clientY)>5||Math.abs(ev.clientX-e.clientX)>5)moved=true;
         if(!moved)return;
-        const target=document.elementFromPoint(ev.clientX,ev.clientY);
-        const targetRow=target&&target.closest('.habit-progress-card[data-habit-id]');
-        wrap.querySelectorAll('.habit-progress-card.habit-drop-target').forEach(n=>n.classList.remove('habit-drop-target'));
-        if(targetRow&&targetRow!==row)targetRow.classList.add('habit-drop-target');
+        if(!ghost){
+          ghost=row.cloneNode(true);
+          ghost.classList.remove('habit-drop-target');
+          ghost.classList.add('habit-drag-preview');
+          ghost.style.width=rect.width+'px';
+          ghost.style.left=(ev.clientX-offsetX)+'px';
+          ghost.style.top=(ev.clientY-offsetY)+'px';
+          document.body.appendChild(ghost);
+          row.classList.add('is-dragging');
+          haptic(8);
+        }
+        ghost.style.left=(ev.clientX-offsetX)+'px';
+        ghost.style.top=(ev.clientY-offsetY)+'px';
+        const scrollBox=document.getElementById('main-scroll');
+        if(scrollBox){
+          const sr=scrollBox.getBoundingClientRect(),edge=68,speed=ev.clientY<sr.top+edge?-Math.ceil((sr.top+edge-ev.clientY)/5):ev.clientY>sr.bottom-edge?Math.ceil((ev.clientY-(sr.bottom-edge))/5):0;
+          if(speed)scrollBox.scrollTop+=Math.max(-18,Math.min(18,speed));
+        }else{
+          const edge=64;
+          if(ev.clientY<edge)window.scrollBy(0,-Math.min(18,Math.ceil((edge-ev.clientY)/4)));
+          else if(ev.clientY>window.innerHeight-edge)window.scrollBy(0,Math.min(18,Math.ceil((ev.clientY-(window.innerHeight-edge))/4)));
+        }
+        const hit=document.elementFromPoint(ev.clientX,ev.clientY);
+        targetRow=hit&&hit.closest('.habit-progress-card[data-habit-id]');
+        if(targetRow===row)targetRow=null;
+        clearTargets();
+        if(targetRow)targetRow.classList.add('habit-drop-target');
       };
       const finish=async ev=>{
-        document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',finish);document.removeEventListener('pointercancel',finish);
-        wrap.querySelectorAll('.habit-progress-card.habit-drop-target').forEach(n=>n.classList.remove('habit-drop-target'));
+        if(finished)return;finished=true;
+        document.removeEventListener('pointermove',move);
+        document.removeEventListener('pointerup',finish);
+        document.removeEventListener('pointercancel',finish);
+        clearTargets();
+        if(ghost)ghost.remove();
+        row.classList.remove('is-dragging');
         if(!moved)return;
-        const target=document.elementFromPoint(ev.clientX,ev.clientY);
-        const targetRow=target&&target.closest('.habit-progress-card[data-habit-id]');
-        if(!targetRow||targetRow===row)return;
-        const from=state.habits.findIndex(x=>x.id===row.dataset.habitId),to=state.habits.findIndex(x=>x.id===targetRow.dataset.habitId);
-        if(from<0||to<0)return;
-        const item=state.habits.splice(from,1)[0];state.habits.splice(to,0,item);
+        const hit=Number.isFinite(ev.clientY)?document.elementFromPoint(ev.clientX,ev.clientY):null;
+        const finalTarget=hit&&hit.closest('.habit-progress-card[data-habit-id]')||targetRow;
+        if(!finalTarget||finalTarget===row)return;
+        const from=state.habits.findIndex(x=>x.id===row.dataset.habitId),to=state.habits.findIndex(x=>x.id===finalTarget.dataset.habitId);
+        if(from<0||to<0||from===to)return;
+        const item=state.habits.splice(from,1)[0];
+        state.habits.splice(to,0,item);
         renderHabitGrid();renderDashboard();
         await save('habits',state.habits);
         showToast('Habit order updated.');
       };
-      document.addEventListener('pointermove',move,{passive:true});document.addEventListener('pointerup',finish,{once:true});document.addEventListener('pointercancel',finish,{once:true});
+      document.addEventListener('pointermove',move,{passive:false});
+      document.addEventListener('pointerup',finish,{once:true});
+      document.addEventListener('pointercancel',finish,{once:true});
     }));
     wrap.querySelectorAll('[data-history]').forEach(btn=>btn.onclick=()=>{const box=wrap.querySelector('[data-month="'+btn.dataset.history+'"]');box.hidden=!box.hidden;btn.textContent=box.hidden?'View 30-day history':'Hide 30-day history';});
     wrap.querySelectorAll('[data-edit-habit]').forEach(btn=>btn.addEventListener('click',()=>{
