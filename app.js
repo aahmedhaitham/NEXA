@@ -137,7 +137,26 @@
       btn.className = 'tabitem' + (t.id==='today'?' active':'');
       btn.dataset.tab = t.id;
       btn.innerHTML = icon(t.icon,24) + '<span>'+t.label+'</span>';
-      btn.addEventListener('click', ()=>gotoPage(t.id));
+      btn.addEventListener('click', ()=>{
+        const now = Date.now();
+        const previous = Number(btn.dataset.lastTap || 0);
+        btn.dataset.lastTap = String(now);
+        if(now - previous <= 450){
+          btn.dataset.lastTap = '0';
+          gotoPage(t.id);
+          const firstSubtab = {tasks:'list',health:'training',settings:'general'}[t.id];
+          if(firstSubtab) gotoSubtab(t.id, firstSubtab);
+          const scrollContainer = document.getElementById('main-scroll');
+          scrollContainer.scrollTop = 0;
+          scrollContainer.scrollTo(0, 0);
+          requestAnimationFrame(()=>{
+            scrollContainer.scrollTop = 0;
+            scrollContainer.scrollTo(0, 0);
+          });
+          return;
+        }
+        gotoPage(t.id);
+      });
       wrap.appendChild(btn);
     });
   }
