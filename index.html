@@ -66,9 +66,10 @@
       </div>
 
       <div class="subpage" data-group="tasks" id="tasks-sub-subjects">
-        <div class="card subject-add-card" id="subject-add-form">
-          <div class="field" style="margin-bottom:10px;"><input type="text" id="subject-in-name" placeholder="New subject name"></div>
-          <button class="btn small" id="subject-add-btn">+ Add subject</button>
+        <div class="row" style="margin-bottom:12px;"><div></div><button class="btn small" id="subject-new-btn">+ Add subject</button></div>
+        <div class="card subject-add-card" id="subject-add-form" style="display:none;">
+          <div class="field" style="margin-bottom:10px;"><label for="subject-in-name">Subject name</label><input type="text" id="subject-in-name" placeholder="New subject name"></div>
+          <div class="row" style="gap:8px;"><button class="btn gray" id="subject-cancel-btn">Cancel</button><button class="btn" id="subject-add-btn">Add subject</button></div>
         </div>
         <div id="subjects-list"></div>
       </div>
