@@ -986,8 +986,20 @@
     window.location.reload();
   });
 
-  document.getElementById('habit-new-btn').addEventListener('click', ()=>{document.getElementById('habit-edit-id').value='';document.getElementById('habit-in-name').value='';document.getElementById('habit-in-time').value='';renderHabitWeeklyTimes({});document.querySelectorAll('#habit-day-picker .exercise-chip').forEach(b=>b.classList.toggle('active',b.dataset.day==='daily'));document.getElementById('habit-form').style.display='block';});
-  document.getElementById('habit-cancel-btn').addEventListener('click', ()=>{ document.getElementById('habit-form').style.display='none'; });
+  const habitForm=document.getElementById('habit-form');
+  function closeHabitForm(){habitForm.style.display='none';}
+  document.getElementById('habit-new-btn').addEventListener('click', ()=>{
+    if(habitForm.style.display!=='none'){closeHabitForm();return;}
+    document.getElementById('habit-edit-id').value='';
+    document.getElementById('habit-in-name').value='';
+    document.getElementById('habit-in-time').value='';
+    renderHabitWeeklyTimes({});
+    document.querySelectorAll('#habit-day-picker .exercise-chip').forEach(b=>b.classList.toggle('active',b.dataset.day==='daily'));
+    habitForm.style.display='block';
+  });
+  document.getElementById('habit-cancel-btn').addEventListener('click',closeHabitForm);
+  habitForm.addEventListener('click',e=>{if(e.target===habitForm)closeHabitForm();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&habitForm.style.display!=='none')closeHabitForm();});
   document.querySelectorAll('#habit-day-picker .exercise-chip').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       if(btn.dataset.day==='daily'){
