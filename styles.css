@@ -434,6 +434,9 @@
 
 /* Settings: keep Classes on the same scrollable page as General settings. */
 #settings-sub-general .settings-classes-section{margin-top:0;padding-top:0;border-top:0;}
+#settings-sub-general .settings-classes-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px;}
+#settings-sub-general .settings-classes-toolbar-label{font-size:13px;font-weight:650;color:var(--muted);}
+#settings-sub-general #class-new-btn{flex:0 0 auto;}
 .settings-classes-heading{margin:0 0 12px;font-size:18px;font-weight:800;color:var(--ink);}
 
 /* Settings: keep the expanded Classes row visually continuous with its description. */
