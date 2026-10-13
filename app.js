@@ -73,7 +73,7 @@
     state.classSchedule = await safeGet('classSchedule', []);
     state.subjects = await safeGet('subjects', []);
     state.subjectItems = await safeGet('subjectItems', []);
-    if(!Array.isArray(state.config.classSubjectSuggestions)){state.config.classSubjectSuggestions=state.subjects.map(s=>s.name);await save('config',state.config);}
+    if(!Array.isArray(state.config.classSubjectSuggestions)){state.config.classSubjectSuggestions=state.subjects.map(s=>s.name);}if(!Array.isArray(state.config.hiddenClassSubjectSuggestions))state.config.hiddenClassSubjectSuggestions=[];await save('config',state.config);
   }
 
   function escapeHTML(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
@@ -839,7 +839,7 @@
     const names=Array.isArray(state.config.classSubjectSuggestions)?state.config.classSubjectSuggestions:[];
     const shown=names.filter(name=>!query||name.toLowerCase().includes(query));wrap.innerHTML='';
     if(!shown.length){wrap.style.display='none';return;}wrap.style.display='flex';
-    shown.forEach(name=>{const chip=document.createElement('span');chip.className='class-subject-suggestion';const pick=document.createElement('button');pick.type='button';pick.className='class-subject-pick';pick.textContent=name;pick.onclick=()=>{input.value=name;wrap.style.display='none';};const remove=document.createElement('button');remove.type='button';remove.className='class-subject-remove';remove.textContent='×';remove.title='Remove '+name+' from quick suggestions';remove.setAttribute('aria-label','Remove '+name+' suggestion');remove.onclick=async()=>{state.config.classSubjectSuggestions=names.filter(n=>n!==name);await save('config',state.config);renderClassSubjectSuggestions();showToast('Removed '+name+' from suggestions.');};chip.append(pick,remove);wrap.appendChild(chip);});
+    shown.forEach(name=>{const chip=document.createElement('span');chip.className='class-subject-suggestion';const pick=document.createElement('button');pick.type='button';pick.className='class-subject-pick';pick.textContent=name;pick.onclick=()=>{input.value=name;wrap.style.display='none';};const remove=document.createElement('button');remove.type='button';remove.className='class-subject-remove';remove.textContent='×';remove.title='Remove '+name+' from quick suggestions';remove.setAttribute('aria-label','Remove '+name+' suggestion');remove.onclick=async()=>{state.config.classSubjectSuggestions=names.filter(n=>n!==name);state.config.hiddenClassSubjectSuggestions=Array.isArray(state.config.hiddenClassSubjectSuggestions)?state.config.hiddenClassSubjectSuggestions:[];if(!state.config.hiddenClassSubjectSuggestions.some(n=>n.toLowerCase()===name.toLowerCase()))state.config.hiddenClassSubjectSuggestions.push(name);await save('config',state.config);renderClassSubjectSuggestions();showToast('Removed '+name+' from suggestions.');};chip.append(pick,remove);wrap.appendChild(chip);});
   }
   document.getElementById('class-in-subject').addEventListener('input',renderClassSubjectSuggestions);
   document.getElementById('class-in-subject').addEventListener('focus',renderClassSubjectSuggestions);
@@ -886,7 +886,7 @@
       await save('subjects', state.subjects);
     }
     state.config.classSubjectSuggestions=Array.isArray(state.config.classSubjectSuggestions)?state.config.classSubjectSuggestions:[];
-    if(type!=='gap'&&!state.config.classSubjectSuggestions.some(n=>n.toLowerCase()===subject.toLowerCase())){state.config.classSubjectSuggestions.push(subject);await save('config',state.config);}
+    state.config.hiddenClassSubjectSuggestions=Array.isArray(state.config.hiddenClassSubjectSuggestions)?state.config.hiddenClassSubjectSuggestions:[];if(type!=='gap'&&!state.config.hiddenClassSubjectSuggestions.some(n=>n.toLowerCase()===subject.toLowerCase())&&!state.config.classSubjectSuggestions.some(n=>n.toLowerCase()===subject.toLowerCase())){state.config.classSubjectSuggestions.push(subject);await save('config',state.config);}
     ['class-in-subject','class-in-room','class-in-notes','class-in-start','class-in-end'].forEach(id=>document.getElementById(id).value='');
     document.querySelectorAll('#class-day-picker .exercise-chip').forEach(b=>b.classList.remove('active'));
     document.getElementById('class-form').style.display='none';
