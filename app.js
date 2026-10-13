@@ -951,15 +951,13 @@
     renderTaskList(); renderStatbar(); showToast('Task added.');
   });
   document.getElementById('refresh-app-btn').addEventListener('click', async ()=>{
-    const btn=document.getElementById('refresh-app-btn');
-    btn.disabled=true; btn.textContent='Refreshing…';
     try{
       if('serviceWorker' in navigator){
         const regs=await navigator.serviceWorker.getRegistrations();
         await Promise.all(regs.map(reg=>reg.update().catch(()=>{})));
         for(const reg of regs){if(reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'});}
       }
-    }catch(e){console.warn('Refresh failed',e);}
+    }catch(e){console.warn('App update check failed',e);}
     window.location.reload();
   });
 
