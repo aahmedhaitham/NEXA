@@ -73,7 +73,7 @@
     state.classSchedule = await safeGet('classSchedule', []);
     state.subjects = await safeGet('subjects', []);
     state.subjectItems = await safeGet('subjectItems', []);
-    if(!Array.isArray(state.config.classSubjectSuggestions)){state.config.classSubjectSuggestions=state.subjects.map(s=>s.name);}if(!Array.isArray(state.config.hiddenClassSubjectSuggestions))state.config.hiddenClassSubjectSuggestions=[];await save('config',state.config);
+    await save('config',state.config);
   }
 
   function escapeHTML(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
@@ -992,27 +992,13 @@
     row.querySelector('.csubject').parentElement.onclick=()=>openClassEdit(c);
     wrap.appendChild(row);
   }
-  function renderClassSubjectSuggestions(){
-    const wrap=document.getElementById('class-subject-suggestions');if(!wrap)return;
-    const input=document.getElementById('class-in-subject');const query=(input.value||'').trim().toLowerCase();
-    const names=Array.isArray(state.config.classSubjectSuggestions)?state.config.classSubjectSuggestions:[];
-    const shown=names.filter(name=>!query||name.toLowerCase().includes(query));wrap.innerHTML='';
-    if(!shown.length){wrap.style.display='none';return;}wrap.style.display='flex';
-    shown.forEach(name=>{const chip=document.createElement('span');chip.className='class-subject-suggestion';const pick=document.createElement('button');pick.type='button';pick.className='class-subject-pick exercise-chip';pick.textContent=name;pick.onclick=()=>{input.value=name;wrap.style.display='none';};const remove=document.createElement('button');remove.type='button';remove.className='class-subject-remove';remove.textContent='×';remove.title='Remove '+name+' from quick suggestions';remove.setAttribute('aria-label','Remove '+name+' suggestion');remove.onclick=async()=>{state.config.classSubjectSuggestions=names.filter(n=>n!==name);state.config.hiddenClassSubjectSuggestions=Array.isArray(state.config.hiddenClassSubjectSuggestions)?state.config.hiddenClassSubjectSuggestions:[];if(!state.config.hiddenClassSubjectSuggestions.some(n=>n.toLowerCase()===name.toLowerCase()))state.config.hiddenClassSubjectSuggestions.push(name);await save('config',state.config);renderClassSubjectSuggestions();showToast('Removed '+name+' from suggestions.');};chip.append(pick,remove);wrap.appendChild(chip);});
-  }
-  document.getElementById('class-in-subject').addEventListener('input',renderClassSubjectSuggestions);
-  document.getElementById('class-in-subject').addEventListener('focus',renderClassSubjectSuggestions);
-  document.getElementById('class-in-type').addEventListener('change',()=>{const gap=document.getElementById('class-in-type').value==='gap';document.getElementById('class-subject-field').style.display=gap?'none':'';document.getElementById('class-in-subject').placeholder='e.g. Mathematics';document.getElementById('class-subject-suggestions').style.display=gap?'none':'';document.getElementById('class-save-btn').textContent=gap?'Save free period':'Save class';});
-  document.addEventListener('click',e=>{const wrap=document.getElementById('class-subject-suggestions');if(wrap&&!wrap.contains(e.target)&&e.target.id!=='class-in-subject')wrap.style.display='none';});
-
   function renderClassesPage(){
-    renderClassSubjectSuggestions();
     const wrap=document.getElementById('class-days-wrap');wrap.innerHTML='';
     const makeGroup=(label,items)=>{if(!items.length)return;const section=document.createElement('section');section.className='class-day-group';const header=document.createElement('button');header.type='button';header.className='day-header collapsed';header.innerHTML='<span>'+label+'</span><span class="class-day-count">'+items.length+' class'+(items.length===1?'':'es')+' <span aria-hidden="true">⌄</span></span>';const list=document.createElement('div');list.className='class-day-items';list.hidden=true;items.forEach(item=>renderClassRow(list,item));header.onclick=()=>{list.hidden=!list.hidden;header.classList.toggle('collapsed',list.hidden);header.querySelector('.class-day-count').innerHTML=items.length+' class'+(items.length===1?'':'es')+' <span aria-hidden="true">'+(list.hidden?'⌄':'⌃')+'</span>';};section.append(header,list);wrap.appendChild(section);};
     const daily=state.classSchedule.filter(c=>c.day==='daily').sort((a,b)=>a.start.localeCompare(b.start));if(daily.length)makeGroup('Every day',daily,'daily');
     DAYS.forEach(day=>makeGroup(DAY_LABELS[day],state.classSchedule.filter(c=>c.day===day).sort((a,b)=>a.start.localeCompare(b.start))));
   }
-  const classForm=document.getElementById('class-form');function closeClassForm(){classForm.style.display='none';document.getElementById('class-subject-suggestions').style.display='none';}document.getElementById('class-new-btn').addEventListener('click', ()=>{if(classForm.style.display!=='none'){closeClassForm();return;}document.getElementById('class-edit-id').value='';['class-in-subject','class-in-room','class-in-notes','class-in-start','class-in-end'].forEach(id=>document.getElementById(id).value='');document.getElementById('class-in-type').value='lecture';document.getElementById('class-in-type').dispatchEvent(new Event('change'));document.querySelectorAll('#class-day-picker .exercise-chip').forEach(b=>b.classList.remove('active'));classForm.style.display='block';renderClassSubjectSuggestions();});classForm.addEventListener('click',e=>{if(e.target===classForm)closeClassForm();});document.addEventListener('click',e=>{if(classForm.style.display==='none'||classForm.contains(e.target)||e.target.closest('#class-new-btn')||e.target.closest('#class-days-wrap .item-actions'))return;closeClassForm();});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&classForm.style.display!=='none')closeClassForm();});
+  const classForm=document.getElementById('class-form');function closeClassForm(){classForm.style.display='none';}document.getElementById('class-new-btn').addEventListener('click', ()=>{if(classForm.style.display!=='none'){closeClassForm();return;}document.getElementById('class-edit-id').value='';['class-in-subject','class-in-room','class-in-notes','class-in-start','class-in-end'].forEach(id=>document.getElementById(id).value='');document.getElementById('class-in-type').value='lecture';document.getElementById('class-in-type').dispatchEvent(new Event('change'));document.querySelectorAll('#class-day-picker .exercise-chip').forEach(b=>b.classList.remove('active'));classForm.style.display='block';});classForm.addEventListener('click',e=>{if(e.target===classForm)closeClassForm();});document.addEventListener('click',e=>{if(classForm.style.display==='none'||classForm.contains(e.target)||e.target.closest('#class-new-btn')||e.target.closest('#class-days-wrap .item-actions'))return;closeClassForm();});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&classForm.style.display!=='none')closeClassForm();});
   document.getElementById('class-cancel-btn').addEventListener('click', closeClassForm);
   document.querySelectorAll('#class-day-picker .exercise-chip').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -1033,7 +1019,7 @@
     const start = document.getElementById('class-in-start').value;
     const end = document.getElementById('class-in-end').value;
     const selectedDays = Array.from(document.querySelectorAll('#class-day-picker .exercise-chip.active')).map(b=>b.dataset.day);
-    if((type!=='gap'&&!subject)||!start||!end||end<=start||!selectedDays.length){showToast('Fill in the required fields, choose a valid time range, and pick at least one day.');return;}
+    if(type!=='gap'&&!subject){showToast('Enter a subject name.');document.getElementById('class-in-subject').focus();return;}if(!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(start)||!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(end)){showToast('Choose both a start and end time.');return;}const startMinutes=Number(start.slice(0,2))*60+Number(start.slice(3)),endMinutes=Number(end.slice(0,2))*60+Number(end.slice(3));if(endMinutes<=startMinutes){showToast('End time must be after start time.');document.getElementById('class-in-end').focus();return;}if(!selectedDays.length){showToast('Choose at least one day.');return;}
     const room = document.getElementById('class-in-room').value.trim();
     const notes = document.getElementById('class-in-notes').value.trim();
     const editId=document.getElementById('class-edit-id').value;
@@ -1044,8 +1030,6 @@
       state.subjects.push({id:'subj-'+Date.now(), name:subject});
       await save('subjects', state.subjects);
     }
-    state.config.classSubjectSuggestions=Array.isArray(state.config.classSubjectSuggestions)?state.config.classSubjectSuggestions:[];
-    state.config.hiddenClassSubjectSuggestions=Array.isArray(state.config.hiddenClassSubjectSuggestions)?state.config.hiddenClassSubjectSuggestions:[];if(type!=='gap'&&!state.config.hiddenClassSubjectSuggestions.some(n=>n.toLowerCase()===subject.toLowerCase())&&!state.config.classSubjectSuggestions.some(n=>n.toLowerCase()===subject.toLowerCase())){state.config.classSubjectSuggestions.push(subject);await save('config',state.config);}
     ['class-in-subject','class-in-room','class-in-notes','class-in-start','class-in-end'].forEach(id=>document.getElementById(id).value='');
     document.querySelectorAll('#class-day-picker .exercise-chip').forEach(b=>b.classList.remove('active'));
     document.getElementById('class-form').style.display='none';
@@ -1237,7 +1221,7 @@
     localStorage.clear();
     state = {exercises:JSON.parse(JSON.stringify(DEFAULT_EXERCISES)), logs:[], events:[], nutrition:{}, tasks:[], habits:JSON.parse(JSON.stringify(DEFAULT_HABITS)), habitLogs:{},
       classSchedule:[], subjects:[], subjectItems:[], health:{steps:{},sleep:{},weight:[]},prayerLogs:{},customReminders:[],
-      config:{plan:Object.assign({},DEFAULT_PLAN), settings:{calendarReminderHours:24,notifications:{classes:true,habits:true,prayer:true,events:true},notificationLead:{classes:15,habits:0,prayer:0,events:0}}, dashboardOrder:['classes','train','nutrition','habits','tasks','calendar','prayer'],classSubjectSuggestions:[]}};
+      config:{plan:Object.assign({},DEFAULT_PLAN), settings:{calendarReminderHours:24,notifications:{classes:true,habits:true,prayer:true,events:true},notificationLead:{classes:15,habits:0,prayer:0,events:0}}, dashboardOrder:['classes','train','nutrition','habits','tasks','calendar','prayer']}};
     for(const k of ['exercises','logs','events','nutrition','tasks','habits','habitLogs','prayerLogs','customReminders','classSchedule','subjects','subjectItems','health','config']) await save(k, state[k]);
     showToast('All data reset.'); gotoPage('today');
   });
