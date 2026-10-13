@@ -943,11 +943,12 @@
       row.style.marginBottom = '8px';
       const metaBits = [];
       if(c.room) metaBits.push('ROOM '+escapeHTML(c.room));
+      const isGap=c.type==='gap';
       row.innerHTML =
-        '<div style="flex:1;min-width:0;"><div class="csubject">'+escapeHTML(c.subject)+'</div>'+
-        (metaBits.length?'<div class="croom">'+metaBits.join(' \u00b7 ')+'</div>':'')+
-        '<span class="badge '+c.type+'" style="display:inline-block;margin-top:7px;">'+c.type+'</span></div>'+
-        '<div class="ctime" style="width:auto;min-width:92px;text-align:right;align-self:center;color:var(--ink);font-size:13px;">'+formatClassTime(c.start)+' \u2013 '+formatClassTime(c.end)+'</div>';
+        '<div style="flex:1;min-width:0;">'+(isGap?'':'<div class="csubject">'+escapeHTML(c.subject)+'</div>')+
+        (metaBits.length?'<div class="croom">'+metaBits.join(' \\u00b7 ')+'</div>':'')+
+        '<span class="badge '+c.type+'" style="display:inline-block;margin-top:'+(isGap?'0':'7')+'px;">'+(isGap?'FREE PERIOD':escapeHTML(c.type))+'</span></div>'+
+        '<div class="ctime" style="width:auto;min-width:92px;text-align:right;align-self:center;color:var(--ink);font-size:13px;">'+formatClassTime(c.start)+' \\u2013 '+formatClassTime(c.end)+'</div>';
       el.appendChild(row);
     });
   }
