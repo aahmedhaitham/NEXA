@@ -349,16 +349,38 @@
   }
   function renderExerciseChips(){
     const wrap = document.getElementById('exercise-chips'); wrap.innerHTML = '';
+    wrap.style.display = 'flex'; wrap.style.flexWrap = 'wrap'; wrap.style.alignItems = 'center'; wrap.style.gap = '6px';
     state.exercises.forEach(ex=>{
-      const chip = document.createElement('span');
-      chip.className = 'exercise-chip';
-      chip.textContent = ex.name;
+      const item = document.createElement('span');
+      item.style.cssText = 'display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:3px;';
+      const chip = document.createElement('button');
+      chip.type = 'button'; chip.className = 'exercise-chip'; chip.textContent = ex.name;
+      chip.style.margin = '0'; chip.style.border = '0'; chip.style.borderRadius = '0';
       chip.onclick = ()=>{
         document.getElementById('log-in-name').value = ex.name;
         selectedLogCategory = ex.category;
         document.querySelectorAll('#log-cat-picker .exercise-chip').forEach(b=>b.classList.toggle('active', b.dataset.cat===ex.category));
       };
-      wrap.appendChild(chip);
+      const remove = document.createElement('button');
+      remove.type = 'button'; remove.textContent = '×'; remove.title = 'Remove '+ex.name;
+      remove.setAttribute('aria-label','Remove exercise '+ex.name);
+      remove.style.cssText = 'padding:0 9px;align-self:stretch;background:rgba(255,255,255,.04);border:0;border-left:1px solid var(--border);color:var(--muted);font-size:18px;cursor:pointer;';
+      remove.onclick = async (event)=>{
+        event.stopPropagation();
+        if(!await nexaConfirm('Remove exercise?','Remove "'+ex.name+'" from Quick fill and suggestions? Its logged sets and related progress history will also be deleted.','Remove exercise')) return;
+        state.exercises = state.exercises.filter(x=>x.id!==ex.id);
+        state.logs = state.logs.filter(l=>l.name.toLowerCase()!==ex.name.toLowerCase());
+        await save('exercises',state.exercises);
+        await save('logs',state.logs);
+        if(document.getElementById('log-in-name').value.trim().toLowerCase()===ex.name.toLowerCase()){
+          document.getElementById('log-in-name').value='';
+          selectedLogCategory=null;
+          document.querySelectorAll('#log-cat-picker .exercise-chip').forEach(b=>b.classList.remove('active'));
+        }
+        renderExerciseChips(); renderProgressSelect(); renderRecentSets(); renderDashboard(); renderStatbar();
+        showToast('Exercise removed.');
+      };
+      item.appendChild(chip); item.appendChild(remove); wrap.appendChild(item);
     });
     const datalist = document.getElementById('exercise-names');
     datalist.innerHTML = distinctExerciseNames().map(n=>'<option value="'+escapeHTML(n)+'">').join('');
