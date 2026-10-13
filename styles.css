@@ -159,7 +159,11 @@
   .class-row.passed{opacity:.62;}
   .class-passed{font-size:10px;font-weight:800;letter-spacing:.04em;color:var(--muted);border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:4px 7px;margin-left:7px;white-space:nowrap;}
   .dash-habits{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
-  .dash-habit{min-height:58px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.055);color:var(--ink);padding:10px 12px;font:inherit;font-size:13px;font-weight:700;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .dash-habit{min-width:0;min-height:58px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.055);color:var(--ink);padding:10px 12px;font:inherit;font-size:13px;font-weight:700;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .dash-habit-label{display:block;flex:1;min-width:0;overflow-wrap:anywhere;line-height:1.25;}
+  .dash-habit.long-title{grid-column:1/-1;min-height:54px;}
+  .dash-habit.long-title .dash-habit-label{padding-right:4px;}
+  .dash-habit-mark{flex:0 0 22px;}
   .dash-habit.done{border-color:rgba(51,214,122,.45);background:rgba(51,214,122,.10);}
   .dash-habit-mark{width:22px;height:22px;border-radius:7px;border:1px solid rgba(255,255,255,.18);display:grid;place-items:center;flex-shrink:0;color:var(--green);}
   .dash-task{display:flex;align-items:center;gap:11px;padding:11px 12px;margin-bottom:8px;background:rgba(255,255,255,.055);border:1px solid var(--border);border-radius:14px;}
