@@ -951,6 +951,13 @@
     renderTaskList(); renderStatbar(); showToast('Task added.');
   });
   document.getElementById('refresh-app-btn').addEventListener('click', async ()=>{
+    const button=document.getElementById('refresh-app-btn');
+    if(button.dataset.refreshing==='true') return;
+    button.dataset.refreshing='true';
+    button.disabled=true;
+    button.setAttribute('aria-busy','true');
+    const icon=button.querySelector('.settings-section-icon');
+    if(icon) icon.innerHTML='<span class="settings-loading-spinner" aria-hidden="true"></span>';
     try{
       if('serviceWorker' in navigator){
         const regs=await navigator.serviceWorker.getRegistrations();
