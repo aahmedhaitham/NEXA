@@ -643,7 +643,19 @@
     customWrap.innerHTML='<label style="display:block;margin-bottom:6px;font-size:12px;color:var(--muted);">Custom workout splits</label><div style="display:flex;gap:8px;"><input id="workout-category-input" type="text" maxlength="24" placeholder="e.g. Upper, Lower, Arms" style="min-width:0;flex:1;"><button type="button" class="btn small" id="workout-category-add">Add</button></div><p style="font-size:11px;color:var(--muted);margin-top:6px;">Add your own split names; they’ll appear in the weekly schedule and workout logger.</p><div id="workout-category-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>';
     wrap.appendChild(customWrap);
     const list=customWrap.querySelector('#workout-category-list');
-    categories.filter(c=>!['push','pull','legs'].includes(c.toLowerCase())).forEach(cat=>{const chip=document.createElement('span');chip.className='exercise-chip';chip.textContent=cat;list.appendChild(chip);});
+    categories.filter(c=>!['push','pull','legs'].includes(c.toLowerCase())).forEach(cat=>{
+      const chip=document.createElement('span');chip.className='workout-category-chip';
+      const name=document.createElement('span');name.textContent=cat;
+      const remove=document.createElement('button');remove.type='button';remove.className='workout-category-remove';remove.textContent='×';remove.title='Remove '+cat;remove.setAttribute('aria-label','Remove '+cat+' workout split');
+      remove.onclick=async()=>{
+        if(!await nexaConfirm('Remove workout split?','Remove “'+cat+'” from your workout split options? Any weekdays using it will be changed to Rest.','Remove'))return;
+        state.config.workoutCategories=(state.config.workoutCategories||[]).filter(c=>String(c).toLowerCase()!==cat.toLowerCase());
+        DAYS.forEach(day=>{if(String(state.config.plan[day]||'').toLowerCase()===cat.toLowerCase())state.config.plan[day]='rest';});
+        if(String(selectedLogCategory||'').toLowerCase()===cat.toLowerCase())selectedLogCategory='push';
+        await save('config',state.config);renderPlanEditor();renderWorkoutCategoryPicker();renderDashboard();showToast('Workout split removed.');
+      };
+      chip.append(name,remove);list.appendChild(chip);
+    });
     const addCategory=async()=>{
       const input=customWrap.querySelector('#workout-category-input'), name=input.value.trim().replace(/\s+/g,' ');
       if(!name)return;
