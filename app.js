@@ -485,7 +485,43 @@
     if(!list.length){ wrap.innerHTML = '<div class="empty-state">No tasks yet — enjoy the clear list.</div>'; return; }
     list.forEach(t=>{
       const row = document.createElement('div'); row.className='task-row'; row.dataset.taskId=t.id;
-      const grip=document.createElement('button');grip.type='button';grip.className='task-drag-handle';grip.textContent='⠿';grip.title='Drag to reorder';grip.setAttribute('aria-label','Drag to reorder task');grip.addEventListener('pointerdown',e=>{if(e.button!==0&&e.pointerType==='mouse')return;e.preventDefault();const startY=e.clientY;let moved=false;const move=ev=>{if(Math.abs(ev.clientY-startY)>5)moved=true;if(!moved)return;const target=document.elementFromPoint(ev.clientX,ev.clientY);const targetRow=target&&target.closest('.task-row[data-task-id]');document.querySelectorAll('.task-row.task-drop-target').forEach(n=>n.classList.remove('task-drop-target'));if(targetRow&&targetRow!==row&&targetRow.parentElement===row.parentElement)targetRow.classList.add('task-drop-target');};const finish=async ev=>{document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',finish);document.removeEventListener('pointercancel',finish);document.querySelectorAll('.task-row.task-drop-target').forEach(n=>n.classList.remove('task-drop-target'));if(!moved)return;const target=document.elementFromPoint(ev.clientX,ev.clientY);const targetRow=target&&target.closest('.task-row[data-task-id]');if(!targetRow||targetRow===row)return;const from=state.tasks.findIndex(x=>x.id===t.id);const targetIndex=state.tasks.findIndex(x=>x.id===targetRow.dataset.taskId);if(from<0||targetIndex<0||state.tasks[from].done!==state.tasks[targetIndex].done)return;const movedTask=state.tasks.splice(from,1)[0];state.tasks.splice(state.tasks.findIndex(x=>x.id===targetRow.dataset.taskId),0,movedTask);await save('tasks',state.tasks);renderTaskList();};document.addEventListener('pointermove',move,{passive:true});document.addEventListener('pointerup',finish,{once:true});document.addEventListener('pointercancel',finish,{once:true});});
+      const grip=document.createElement('button');grip.type='button';grip.className='task-drag-handle';grip.textContent='⠿';grip.title='Drag to reorder';grip.setAttribute('aria-label','Drag to reorder task');
+      grip.addEventListener('pointerdown',e=>{
+        if(e.button!==0&&e.pointerType==='mouse')return;
+        e.preventDefault();
+        const rect=row.getBoundingClientRect(),startX=e.clientX,startY=e.clientY,grabX=e.clientX-rect.left,grabY=e.clientY-rect.top;
+        let moved=false,ghost=null,hoverRow=null,finished=false;
+        const clear=()=>document.querySelectorAll('.task-row.task-drop-target').forEach(n=>n.classList.remove('task-drop-target'));
+        const move=ev=>{
+          if(finished)return;
+          if(Math.abs(ev.clientY-startY)>5||Math.abs(ev.clientX-startX)>5)moved=true;
+          if(!moved)return;
+          if(!ghost){ghost=row.cloneNode(true);ghost.classList.add('task-drag-preview');ghost.style.width=rect.width+'px';document.body.appendChild(ghost);row.classList.add('is-dragging');}
+          ghost.style.left=Math.max(4,Math.min(window.innerWidth-rect.width-4,ev.clientX-grabX))+'px';
+          ghost.style.top=Math.max(4,ev.clientY-grabY)+'px';
+          const scrollBox=document.getElementById('main-scroll');
+          if(scrollBox){const sr=scrollBox.getBoundingClientRect(),edge=68;let speed=ev.clientY<sr.top+edge?-Math.ceil((sr.top+edge-ev.clientY)/5):ev.clientY>sr.bottom-edge?Math.ceil((ev.clientY-(sr.bottom-edge))/5):0;if(speed)scrollBox.scrollTop+=Math.max(-18,Math.min(18,speed));}
+          else if(ev.clientY<64)window.scrollBy(0,-12);else if(ev.clientY>window.innerHeight-64)window.scrollBy(0,12);
+          const hit=document.elementFromPoint(ev.clientX,ev.clientY);
+          hoverRow=hit&&hit.closest('.task-row[data-task-id]');
+          if(hoverRow===row||hoverRow&&hoverRow.parentElement!==row.parentElement)hoverRow=null;
+          clear();if(hoverRow)hoverRow.classList.add('task-drop-target');
+        };
+        const finish=async ev=>{
+          if(finished)return;finished=true;
+          document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',finish);document.removeEventListener('pointercancel',finish);
+          clear();if(ghost)ghost.remove();row.classList.remove('is-dragging');
+          if(!moved)return;
+          const hit=Number.isFinite(ev.clientY)?document.elementFromPoint(ev.clientX,ev.clientY):null;
+          const target=hit&&hit.closest('.task-row[data-task-id]')||hoverRow;
+          if(!target||target===row||target.parentElement!==row.parentElement)return;
+          const from=state.tasks.findIndex(x=>x.id===t.id),to=state.tasks.findIndex(x=>x.id===target.dataset.taskId);
+          if(from<0||to<0||state.tasks[from].done!==state.tasks[to].done)return;
+          const dragged=state.tasks.splice(from,1)[0];state.tasks.splice(state.tasks.findIndex(x=>x.id===target.dataset.taskId),0,dragged);
+          await save('tasks',state.tasks);renderTaskList();
+        };
+        document.addEventListener('pointermove',move,{passive:false});document.addEventListener('pointerup',finish,{once:true});document.addEventListener('pointercancel',finish,{once:true});
+      });
       const check = document.createElement('button'); check.className='checkbtn'+(t.done?' checked':''); check.textContent=t.done?'\u2713':'';
       check.onclick = async ()=>{ t.done=!t.done; haptic(); await save('tasks', state.tasks); renderTaskList(); renderStatbar(); };
       const body = document.createElement('div'); body.style.flex='1';
@@ -499,10 +535,6 @@
       del.onclick = async e=>{e.stopPropagation();const idx=state.tasks.findIndex(x=>x.id===t.id),copy=JSON.parse(JSON.stringify(t));await animateOut(row);state.tasks.splice(idx,1);await save('tasks',state.tasks);renderTaskList();renderStatbar();offerUndo('Task deleted',async()=>{state.tasks.splice(Math.min(idx,state.tasks.length),0,copy);await save('tasks',state.tasks);renderTaskList();renderStatbar();});};
       row.appendChild(del);
       body.onclick=()=>openTaskEdit(t);
-      let sx=0,dx=0;
-      row.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;dx=0;row.classList.add('swiping')},{passive:true});
-      row.addEventListener('touchmove',e=>{dx=e.touches[0].clientX-sx;if(Math.abs(dx)>8)row.style.transform='translateX('+Math.max(-90,Math.min(90,dx))+'px)'},{passive:true});
-      row.addEventListener('touchend',async()=>{row.classList.remove('swiping');row.style.transform='';if(dx>70){t.done=true;haptic();await save('tasks',state.tasks);renderTaskList();renderStatbar();}else if(dx<-70){haptic();state.tasks=state.tasks.filter(x=>x.id!==t.id);await save('tasks',state.tasks);renderTaskList();renderStatbar();}});
       wrap.appendChild(row);
       (t.subtasks||[]).forEach(st=>{
         const sr = document.createElement('div'); sr.className='subtask-row';
@@ -748,7 +780,9 @@
   }
 
   function renderSubjectsPage(){
-    const wrap=document.getElementById('subjects-list'); wrap.innerHTML='';
+    const wrap=document.getElementById('subjects-list');
+    const expandedSubjectIds=new Set([...wrap.querySelectorAll('.subject-card.subject-expanded')].map(card=>card.dataset.subjectId));
+    wrap.innerHTML='';
     if(!state.subjects.length) wrap.innerHTML='<p style="margin-bottom:14px;color:var(--muted);">Add a subject, then add lectures or labs inside it.</p>';
     const iconButton=(label,icon)=>{const b=document.createElement('button');b.type='button';b.className='subject-icon-btn';b.textContent=icon;b.title=label;b.setAttribute('aria-label',label);return b;};
     state.subjects.forEach(s=>{
@@ -780,9 +814,10 @@
         await save('subjects',state.subjects);await save('subjectItems',state.subjectItems);renderSubjectsPage();renderStatbar();
       };
       const subjectGrip=iconButton('Drag to reorder subject','⠿');subjectGrip.classList.add('subject-list-drag-handle');subjectGrip.addEventListener('pointerdown',e=>{if(e.button!==0&&e.pointerType==='mouse')return;e.preventDefault();const startY=e.clientY;let moved=false;const move=ev=>{if(Math.abs(ev.clientY-startY)>5)moved=true;if(!moved)return;const target=document.elementFromPoint(ev.clientX,ev.clientY);const targetCard=target&&target.closest('.subject-card');document.querySelectorAll('.subject-card.subject-card-drop').forEach(n=>n.classList.remove('subject-card-drop'));if(targetCard&&targetCard!==card)targetCard.classList.add('subject-card-drop');};const finish=async ev=>{document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',finish);document.removeEventListener('pointercancel',finish);document.querySelectorAll('.subject-card.subject-card-drop').forEach(n=>n.classList.remove('subject-card-drop'));if(!moved)return;const target=document.elementFromPoint(ev.clientX,ev.clientY);const targetCard=target&&target.closest('.subject-card');if(!targetCard||targetCard===card)return;const from=state.subjects.findIndex(x=>x.id===s.id);const targetIndex=state.subjects.findIndex(x=>x.id===targetCard.dataset.subjectId);if(from<0||targetIndex<0)return;const dragged=state.subjects.splice(from,1)[0];state.subjects.splice(state.subjects.findIndex(x=>x.id===targetCard.dataset.subjectId),0,dragged);await save('subjects',state.subjects);renderSubjectsPage();};document.addEventListener('pointermove',move,{passive:true});document.addEventListener('pointerup',finish,{once:true});document.addEventListener('pointercancel',finish,{once:true});});head.append(subjectGrip,heading,count,delSubject);card.appendChild(head);
-      const itemsWrap=document.createElement('div');itemsWrap.className='subject-items';itemsWrap.hidden=true;
+      const itemsWrap=document.createElement('div');itemsWrap.className='subject-items';itemsWrap.hidden=!expandedSubjectIds.has(s.id);
+      if(!itemsWrap.hidden)card.classList.add('subject-expanded');
       const toggleSubject=()=>{itemsWrap.hidden=!itemsWrap.hidden;addRow.hidden=itemsWrap.hidden;card.classList.toggle('subject-expanded',!itemsWrap.hidden);};
-      heading.onclick=toggleSubject;
+      heading.onclick=e=>{e.stopPropagation();toggleSubject();};
       items.forEach(item=>{
         const row=document.createElement('div');row.className='subject-task-row';row.dataset.subjectItemId=item.id;
         const grip=document.createElement('span');grip.className='subject-drag-handle';grip.textContent='⠿';grip.title='Drag to reorder or move';grip.setAttribute('aria-label','Drag task');
@@ -876,10 +911,17 @@
         state.subjectItems=state.subjectItems.filter(x=>x.id!==draggedId);dragged.subjectId=s.id;state.subjectItems.push(dragged);
         await save('subjectItems',state.subjectItems);renderSubjectsPage();renderStatbar();
       });
-      const addRow=document.createElement('div');addRow.className='subject-add-row';addRow.hidden=true;
+      const addRow=document.createElement('div');addRow.className='subject-add-row';addRow.hidden=itemsWrap.hidden;
       const input=document.createElement('input');input.type='text';input.placeholder='Add a task…';input.setAttribute('aria-label','New task for '+s.name);
       input.addEventListener('keydown',async e=>{
-        if(e.key==='Enter'&&input.value.trim()){state.subjectItems.push({id:'si-'+Date.now(),subjectId:s.id,title:input.value.trim(),done:false});await save('subjectItems',state.subjectItems);renderSubjectsPage();renderStatbar();}
+        if(e.key==='Enter'&&input.value.trim()){
+          e.preventDefault();
+          state.subjectItems.push({id:'si-'+Date.now(),subjectId:s.id,title:input.value.trim(),done:false});
+          await save('subjectItems',state.subjectItems);
+          renderSubjectsPage();renderStatbar();
+          const nextInput=wrap.querySelector('.subject-card[data-subject-id="'+s.id+'"] .subject-add-row input');
+          if(nextInput){nextInput.focus();nextInput.setSelectionRange(nextInput.value.length,nextInput.value.length);}
+        }
       });
       addRow.appendChild(input);card.append(itemsWrap,addRow);wrap.appendChild(card);
     });
