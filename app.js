@@ -193,7 +193,13 @@
     document.querySelectorAll('.tabitem').forEach(n=>n.classList.toggle('active', n.dataset.tab===id));
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.getElementById('page-'+id).classList.add('active');
-    document.getElementById('main-scroll').scrollTop = 0;
+    const scrollContainer = document.getElementById('main-scroll');
+    scrollContainer.scrollTop = 0;
+    scrollContainer.scrollTo(0, 0);
+    requestAnimationFrame(()=>{
+      scrollContainer.scrollTop = 0;
+      scrollContainer.scrollTo(0, 0);
+    });
     if(id==='today') renderDashboard();
     if(id==='calendar') renderAllCalendarBits();
     if(SUBTAB_STATE[id]){
