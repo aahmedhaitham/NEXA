@@ -403,20 +403,25 @@
 .workout-category-remove:hover,.workout-category-remove:focus-visible{background:rgba(255,59,92,.16);color:var(--coral);outline:none}
 
 
-/* Settings as a tidy expandable list */
-#settings-sub-general .settings-list{display:flex;flex-direction:column;gap:9px;}
-#settings-sub-general .settings-section{min-width:0;border:1px solid var(--border);border-radius:14px;background:var(--panel);overflow:hidden;}
-#settings-sub-general .settings-section>summary{list-style:none;display:flex;align-items:center;gap:12px;min-height:68px;padding:13px 15px;cursor:pointer;user-select:none;-webkit-user-select:none;}
+/* Settings: larger, consistent icon tiles and compact, high-clarity rows */
+#settings-sub-general .settings-list{display:flex;flex-direction:column;gap:8px;}
+#settings-sub-general .settings-section{min-width:0;border:1px solid rgba(255,255,255,.12);border-radius:16px;background:linear-gradient(115deg,rgba(255,255,255,.065),rgba(255,255,255,.035));overflow:hidden;transition:border-color .18s ease,background .18s ease;}
+#settings-sub-general .settings-section[open]{border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.045);}
+#settings-sub-general .settings-section>summary{list-style:none;display:flex;align-items:center;gap:13px;min-height:76px;padding:12px 14px;cursor:pointer;user-select:none;-webkit-user-select:none;}
 #settings-sub-general .settings-section>summary::-webkit-details-marker{display:none;}
-.settings-section-icon{width:36px;height:36px;flex:0 0 36px;display:flex;align-items:center;justify-content:center;border-radius:11px;background:rgba(255,255,255,.055);color:var(--coral);font-size:19px;font-weight:700;}
+.settings-section-icon{width:46px;height:46px;flex:0 0 46px;display:flex;align-items:center;justify-content:center;border-radius:14px;background:rgba(255,90,43,.13);color:#ff815e;}
+.settings-section-icon svg{width:24px;height:24px;display:block;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
 .settings-section-label{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px;}
-.settings-section-label strong{font-size:14px;font-weight:750;color:var(--ink);}
-.settings-section-label small{font-size:11px;line-height:1.35;color:var(--muted);font-weight:500;}
-.settings-chevron{font-size:24px;line-height:1;color:var(--muted);transition:transform .18s ease;}
+.settings-section-label strong{font-size:15px;line-height:1.2;font-weight:750;color:var(--ink);}
+.settings-section-label small{font-size:12px;line-height:1.35;color:var(--muted);font-weight:500;}
+.settings-chevron{font-size:26px;line-height:1;color:#777e8b;transition:transform .18s ease,color .18s ease;flex:0 0 auto;}
 .settings-section[open]>summary{border-bottom:1px solid var(--border);}
 .settings-section[open] .settings-chevron{transform:rotate(90deg);color:var(--coral);}
-.settings-section-content{padding:14px 15px 15px;}
+#settings-sub-general .settings-section:nth-child(2) .settings-section-icon{color:#65b9ff;background:rgba(77,163,255,.14);}
+#settings-sub-general .settings-section:nth-child(3) .settings-section-icon{color:#c39aff;background:rgba(176,114,232,.14);}
+#settings-sub-general .settings-section:nth-child(4) .settings-section-icon{color:#58d99a;background:rgba(51,214,122,.13);}
+.settings-danger .settings-section-icon{color:#ff7777;background:rgba(255,90,90,.13);}
+.settings-section-content{padding:14px;}
 .settings-section-content>p{font-size:12px;color:var(--muted);margin:0 0 12px;line-height:1.45;}
 .settings-section-content .notify-list{margin:0 0 14px;}
-.settings-danger .settings-section-icon{color:#ff6b6b;background:rgba(192,57,43,.12);}
-@media(max-width:520px){#settings-sub-general .settings-section>summary{min-height:64px;padding:12px;gap:10px}.settings-section-icon{width:34px;height:34px;flex-basis:34px}.settings-section-content{padding:12px}.settings-section-label strong{font-size:13.5px}}
+@media(max-width:520px){#settings-sub-general .settings-section>summary{min-height:74px;padding:11px 12px;gap:12px}.settings-section-icon{width:44px;height:44px;flex-basis:44px;border-radius:13px}.settings-section-icon svg{width:23px;height:23px}.settings-section-content{padding:12px}.settings-section-label strong{font-size:14.5px}.settings-section-label small{font-size:11.5px}}
