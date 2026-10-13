@@ -473,3 +473,20 @@
 .subject-list-drag-handle:active{color:var(--coral);background:rgba(255,255,255,.08);}
 #main-scroll{overscroll-behavior-y:contain;}
 input[type="time"]{color-scheme:dark;min-height:44px;max-width:100%;touch-action:manipulation;}
+
+/* Collapsible class weekdays and subject task lists */
+#class-days-wrap .class-day-group{margin-bottom:10px;}
+#class-days-wrap .day-header{width:100%;border:0;font:inherit;text-align:left;cursor:pointer;appearance:none;-webkit-appearance:none;}
+#class-days-wrap .day-header.collapsed{opacity:.88;}
+#class-days-wrap .class-day-items[hidden],.subject-items[hidden]{display:none!important;}
+#class-days-wrap .class-day-items{padding-top:2px;}
+#class-days-wrap .class-day-empty{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 4px 14px;color:var(--muted);font-size:12px;}
+.subject-expand-btn{width:28px;min-width:28px;height:30px;padding:0;border:0;background:transparent;color:var(--muted);font-size:19px;line-height:1;transition:transform .18s ease;}
+.subject-card.subject-expanded .subject-expand-btn{transform:rotate(180deg);color:var(--coral);}
+.subject-title{cursor:pointer;}
+.subject-title:active{opacity:.8;}
+.task-drag-handle{width:25px;min-width:25px;min-height:34px;flex:0 0 25px;padding:0;border:0;border-radius:8px;background:transparent;color:var(--muted);font-size:20px;line-height:1;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;}
+.task-drag-handle:active{color:var(--coral);background:rgba(255,255,255,.07);}
+.task-row.task-drop-target{outline:2px solid var(--coral);outline-offset:2px;border-radius:9px;}
+.subject-list-drag-handle{flex:0 0 28px;touch-action:none;cursor:grab;font-size:20px;}
+.subject-list-drag-handle:active{color:var(--coral);background:rgba(255,255,255,.08);}
