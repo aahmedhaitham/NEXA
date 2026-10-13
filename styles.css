@@ -296,3 +296,28 @@
 .habit-time-head{font-size:11px;font-weight:700;margin:3px 0 8px;color:var(--muted)}.habit-weekly-times{margin:10px 0 14px;padding:10px;border:1px solid var(--border);border-radius:12px}.habit-time-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:5px 0;font-size:12px}.habit-time-row input{width:130px;max-width:52%;min-width:0;padding:7px 8px;font-size:14px}.habit-time-help{font-size:10px;color:var(--muted);margin-top:7px}
 .dash-event-clickable{cursor:pointer}
 .dash-event-clickable{cursor:pointer}.dash-event-clickable:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:10px}.dash-event-clickable .dash-event-main{min-width:0}.dash-event-clickable .dash-event-title{white-space:normal;overflow-wrap:anywhere}
+
+
+/* Clean, compact controls for Tasks > Subjects */
+.subject-card{padding:14px 16px;transition:border-color .16s,background .16s;}
+.subject-heading{display:flex;align-items:center;gap:8px;min-width:0;margin-bottom:8px;}
+.subject-title{appearance:none;background:transparent;border:0;padding:3px 0;color:var(--ink);font-size:16px;font-weight:800;text-align:left;min-width:0;flex:1;cursor:text;}
+.subject-title:hover,.subject-task-title:hover{color:var(--coral);}
+.subject-count{font-size:11px;color:var(--muted);white-space:nowrap;}
+.subject-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;flex:0 0 28px;padding:0;border:0;border-radius:8px;background:transparent;color:var(--muted);font-size:17px;line-height:1;cursor:pointer;transition:background .15s,color .15s;}
+.subject-icon-btn:hover{background:rgba(255,255,255,.07);color:var(--ink);}
+.subject-delete-btn:hover{color:var(--coral);}
+.subject-items{min-height:4px;border-radius:10px;transition:background .15s;}
+.subject-task-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);min-width:0;transition:background .15s,border-color .15s;}
+.subject-task-row:last-child{border-bottom:0;}
+.subject-task-row.is-dragging{opacity:.4;}
+.subject-task-row.drop-target{border-top:2px solid var(--coral);background:rgba(255,255,255,.025);}
+.subject-card-drop{border-color:var(--coral)!important;background:rgba(255,255,255,.025);}
+.subject-drag-handle{display:inline-flex;align-items:center;justify-content:center;width:18px;flex:0 0 18px;color:var(--muted);font-size:19px;letter-spacing:-4px;cursor:grab;touch-action:none;user-select:none;opacity:.55;}
+.subject-drag-handle:hover{opacity:1;color:var(--ink);}
+.subject-task-title{flex:1;min-width:0;appearance:none;border:0;background:transparent;padding:7px 0;color:var(--ink);font:inherit;font-size:13px;text-align:left;overflow-wrap:anywhere;cursor:text;}
+.subject-task-title.done{color:var(--muted);text-decoration:line-through;}
+.subject-rename-input{flex:1;min-width:0;width:100%;padding:7px 9px;border:1px solid var(--coral);border-radius:8px;background:var(--surface,rgba(255,255,255,.04));color:var(--ink);font:inherit;font-size:13px;outline:none;}
+.subject-add-row{margin-top:8px;}
+.subject-add-row input{font-size:13px;padding:9px 10px;}
+@media(max-width:480px){.subject-card{padding:12px;}.subject-task-row{gap:5px;}.subject-icon-btn{width:26px;height:26px;flex-basis:26px;}}
