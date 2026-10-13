@@ -884,7 +884,22 @@
       head.append(subjectGrip,heading,count,delSubject);card.appendChild(head);
       const itemsWrap=document.createElement('div');itemsWrap.className='subject-items';itemsWrap.hidden=!expandedSubjectIds.has(s.id);
       if(!itemsWrap.hidden)card.classList.add('subject-expanded');
-      const toggleSubject=()=>{itemsWrap.hidden=!itemsWrap.hidden;addRow.hidden=itemsWrap.hidden;card.classList.toggle('subject-expanded',!itemsWrap.hidden);};
+      const toggleSubject=()=>{
+        const shouldOpen=itemsWrap.hidden;
+        if(shouldOpen){
+          wrap.querySelectorAll('.subject-card').forEach(other=>{
+            if(other===card)return;
+            const otherItems=other.querySelector('.subject-items');
+            const otherAdd=other.querySelector('.subject-add-row');
+            if(otherItems)otherItems.hidden=true;
+            if(otherAdd)otherAdd.hidden=true;
+            other.classList.remove('subject-expanded');
+          });
+        }
+        itemsWrap.hidden=!shouldOpen;
+        addRow.hidden=!shouldOpen;
+        card.classList.toggle('subject-expanded',shouldOpen);
+      };
       heading.onclick=e=>{e.stopPropagation();toggleSubject();};
       items.forEach(item=>{
         const row=document.createElement('div');row.className='subject-task-row';row.dataset.subjectItemId=item.id;
