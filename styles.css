@@ -366,3 +366,31 @@
   .subject-task-title{font-size:14px;padding:7px 0;}
   .subject-drag-handle{width:30px;flex-basis:30px;height:38px;}
 }
+
+
+/* Make subject task dragging feel like a clear lift, without a jump at pickup */
+.subject-task-row.is-dragging{
+  opacity:.28!important;
+  transform:scale(.985);
+  background:rgba(255,255,255,.035)!important;
+  border:1px dashed rgba(255,255,255,.22);
+  border-radius:10px;
+}
+.subject-drag-preview{
+  transform:translateY(-3px) scale(1.035)!important;
+  transform-origin:center center;
+  box-shadow:0 18px 42px rgba(0,0,0,.48),0 4px 12px rgba(0,0,0,.24)!important;
+  transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease;
+  border-color:rgba(255,255,255,.28)!important;
+}
+.subject-drag-preview.is-lifted{
+  transform:translateY(-7px) scale(1.045)!important;
+  box-shadow:0 24px 48px rgba(0,0,0,.52),0 0 0 1px rgba(255,255,255,.06)!important;
+}
+.subject-drag-preview .subject-task-title{color:var(--ink)!important;}
+.subject-drag-preview .subject-drag-handle{color:var(--coral)!important;opacity:1!important;}
+.subject-task-row.drop-target{
+  border-top:2px solid var(--coral)!important;
+  border-radius:7px;
+  background:rgba(255,111,97,.11)!important;
+}
