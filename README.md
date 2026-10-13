@@ -1,84 +1,37 @@
 # Nexa
 
-A mobile-first, local-first productivity and wellness Progressive Web App with a serverless reminder backend.
+Nexa is a mobile-first, local-first productivity and wellness Progressive Web App (PWA). It brings daily planning, university classes, tasks, calendar events, workouts, nutrition, habits, prayer times, and reminders into one installable app.
 
-Nexa combines daily planning, university classes, calendar events, training, nutrition, habits, prayer times and configurable reminders in one installable interface. It is designed primarily for iPhone while remaining responsive on desktop browsers.
+The frontend is framework-free HTML, CSS, and JavaScript. Most personal app data stays in the browser's Local Storage; Supabase is used for the optional background Web Push reminder backend. The app is designed with phones in mind and also works in desktop browsers.
 
 ## Features
 
-- Daily dashboard for classes, tasks, habits, nutrition and upcoming events
-- Class schedule with live **NOW**, **IN X MIN** and **PASSED** states
-- Task management with subtasks and quick completion
-- Calendar events with upcoming-event countdowns
-- Training log and configurable weekly workout split
-- Nutrition targets and daily macro tracking
-- Custom habits with optional reminder times
+- Daily dashboard with classes, tasks, habits, nutrition, and upcoming events
+- Class timetable with live status indicators and class management
+- Tasks, subtasks, subjects, and task organization
+- Calendar events and upcoming-event countdowns
+- Workout logging and configurable weekly workout splits
+- Daily calorie and macronutrient goals
+- Custom habits and habit tracking
 - Prayer-time dashboard
-- Configurable background Web Push reminders for classes, habits, prayer and events
-- Offline-capable installable PWA
-- Touch-first responsive interface with undo actions and mobile safe-area support
+- Configurable background push reminders for classes, habits, prayer, and events
+- Installable PWA with offline app-shell caching
+- Touch-friendly controls, undo actions, responsive layouts, and mobile safe-area support
 
-## Tech Stack
+## Technology
 
-| Layer | Technology |
+| Area | Technology |
 | --- | --- |
-| Frontend | HTML5, CSS3, JavaScript |
-| Client persistence | Browser Local Storage |
-| PWA | Web App Manifest, Service Worker, Cache API |
-| Notifications | Web Push API, Push API, Notifications API |
-| Backend | Supabase Edge Functions |
-| Database | PostgreSQL |
-| Scheduling | pg_cron |
-| Frontend hosting | Vercel |
-| Source control | Git & GitHub |
+| Frontend | HTML5, CSS3, vanilla JavaScript |
+| Local persistence | Browser Local Storage |
+| Installability and offline support | Web App Manifest, Service Worker, Cache API |
+| Push notifications | Web Push API, Notifications API |
+| Reminder backend | Supabase Edge Functions |
+| Reminder data | Supabase PostgreSQL |
+| Hosting | Vercel (frontend) and Supabase (backend) |
+| Version control | Git and GitHub |
 
-## Architecture
-
-Nexa deliberately uses a **local-first architecture** rather than requiring user accounts. Everyday application data is stored in Local Storage on the device, keeping the interface fast and allowing the core experience to remain independent of a cloud database.
-
-The notification system is full-stack. The frontend creates a browser push subscription and sends the public subscription plus reminder configuration to a Supabase Edge Function. PostgreSQL stores the reminder/subscription data, scheduled backend processing evaluates due reminders, and Web Push delivers notifications back to the installed PWA through its service worker.
-
-```text
-┌──────────────────────────────┐
-│        Nexa Frontend         │
-│ HTML · CSS · JavaScript      │
-│ Local Storage · Service Worker│
-└──────────────┬───────────────┘
-               │ reminder configuration
-               ▼
-┌──────────────────────────────┐
-│      Supabase Backend        │
-│ Edge Functions · PostgreSQL  │
-│ pg_cron / scheduled jobs     │
-└──────────────┬───────────────┘
-               │ Web Push
-               ▼
-┌──────────────────────────────┐
-│       Installed Nexa PWA     │
-│ Background notifications     │
-└──────────────────────────────┘
-```
-
-## Frontend
-
-The frontend is framework-free and split into clear responsibilities:
-
-- `index.html` — semantic application markup and PWA metadata
-- `styles.css` — responsive layout, components and mobile styling
-- `app.js` — state, rendering, interactions and application behavior
-- `service-worker.js` — offline caching and background push handling
-- `manifest.webmanifest` — installable PWA configuration
-- `push-config.js` — public Web Push configuration
-
-## Backend
-
-The backend runs on Supabase rather than on Vercel or inside the browser. It is responsible specifically for the reminder pipeline, not for storing the user's everyday Nexa data.
-
-Its responsibilities include receiving push subscriptions, storing reminder configuration in PostgreSQL, running scheduled reminder checks, and sending Web Push notifications. Private backend credentials such as VAPID private keys and service-role credentials are kept out of frontend source control.
-
-The deployed backend is hosted by Supabase. Its Edge Function source and database schema migration are version-controlled under `supabase/`, so the repository documents both sides of the application without committing private backend credentials.
-
-## Project Structure
+## Repository layout
 
 ```text
 NEXA/
@@ -86,46 +39,86 @@ NEXA/
 ├── styles.css
 ├── app.js
 ├── service-worker.js
-├── push-config.js
 ├── manifest.webmanifest
+├── push-config.js
 ├── logo.png
+├── apple-touch-icon.png
 ├── icon-192.png
 ├── icon-512.png
-├── apple-touch-icon.png
+├── .gitignore
+├── README.md
 └── supabase/
     ├── functions/
     │   ├── nexa-push-subscribe/
+    │   │   └── index.ts
     │   └── nexa-send-reminders/
+    │       └── index.ts
     └── migrations/
+        └── 20261004_push_subscriptions.sql
 ```
 
-## Data Flow
+The icon and logo image files are runtime assets, not disposable repository clutter. `logo.png` is used for notification artwork. The Supabase function sources and SQL migration are included so the backend can be reviewed and redeployed.
 
-1. Nexa stores normal application state locally in the browser.
-2. When notifications are enabled, the PWA registers a push subscription.
-3. The frontend sends the subscription and enabled reminder configuration to the Supabase backend.
-4. Scheduled backend processing checks which reminders are due.
-5. The backend sends Web Push messages.
-6. The service worker receives them and displays native notifications, including while the PWA is in the background.
+## Run locally
 
-## PWA & Offline Support
+No frontend package manager, bundler, or build step is required.
 
-The Web App Manifest makes Nexa installable from a supported browser. The service worker caches the application shell and uses a network-first navigation strategy with an offline fallback. Static assets are cached for repeat launches, while the same service worker handles incoming push events and notification clicks.
+1. Clone this repository.
+2. Serve the repository root with any static HTTP server.
+3. Open the local URL in a browser.
 
-## Development
+For example, if Python is installed:
 
-Nexa has no frontend framework or build step. Clone the repository and serve the project directory through a static HTTP server. PWA and Web Push features require HTTPS in production (or localhost during development).
+```bash
+python -m http.server 8000
+```
 
-The production frontend is deployed through Vercel. The reminder backend is deployed separately through Supabase.
+Then open `http://localhost:8000`.
 
-## Security
+Service workers and Web Push require a secure context: use localhost for local development and HTTPS in production. Opening `index.html` directly as a `file://` URL is not a reliable way to test PWA features.
 
-Only public client configuration belongs in the frontend. Private VAPID material, Supabase service-role credentials and other backend secrets must remain in the backend environment and must never be committed to GitHub.
+## Deployment
 
-## Design
+### Frontend
 
-Nexa uses a dark, touch-first interface with compact dashboard cards, responsive controls and mobile safe-area support. The UI is designed to feel closer to a native mobile application than a conventional website.
+Deploy the repository root as a static site on Vercel. There is no build command or output directory to configure for the current framework-free frontend. Ensure all root assets are included in the deployment.
 
-## Status
+### Supabase reminder backend
 
-Nexa is an actively developed personal project. The current architecture intentionally prioritizes a stable local-first experience with a dedicated serverless backend for background reminders. User accounts and cloud synchronization are not part of the current application.
+The backend source is under `supabase/functions/`; the database schema migration is under `supabase/migrations/`.
+
+1. Create or select a Supabase project.
+2. Apply `supabase/migrations/20261004_push_subscriptions.sql` to create the push-subscription table.
+3. Configure the backend secrets in Supabase:
+   - `SUPABASE_URL`
+   - `SUPABASE_SERVICE_ROLE_KEY` (or the supported server-side `SUPABASE_SECRET_KEY`)
+   - `VAPID_PRIVATE_KEY` for the reminder-sending function
+   - `VAPID_SUBJECT` (optional; a valid contact URL or mailto value is recommended)
+4. Deploy `nexa-push-subscribe` and `nexa-send-reminders` as Supabase Edge Functions.
+5. Configure a trusted scheduler to invoke `nexa-send-reminders` at the required interval. The scheduler configuration itself is not included in the SQL migration.
+6. Confirm that `push-config.js` contains the correct **public** VAPID key and the deployed subscription-function URL.
+
+The frontend configuration file intentionally contains only public values. Never put a VAPID private key, Supabase service-role key, or other server secret in `push-config.js`, `app.js`, or any other browser-delivered file.
+
+## Data and privacy notes
+
+- Everyday app data is stored in the current browser/device's Local Storage; it is not automatically backed up to Supabase or synchronized between devices.
+- Clearing browser site data or using the app's **Reset all data** action can permanently remove local app data. Export or back up important information separately before resetting.
+- Supabase stores push-subscription details and the reminder settings needed to deliver background notifications.
+- Background push reminders depend on browser/platform support, notification permission, a deployed backend, valid VAPID keys, and a working scheduler.
+- Prayer reminder calculations in `nexa-send-reminders/index.ts` currently use coordinates defined in that function. Change those coordinates if the reminder location needs to differ.
+
+## Offline and update behavior
+
+The service worker caches the app shell and static assets for repeat launches, attempts a network-first load for navigation, and falls back to the cached app page when offline. It also receives push events and opens Nexa when a notification is tapped. When changing the app shell or its caching behavior, update the service-worker cache version and keep the asset list in sync with the files the app requires.
+
+## Security checklist
+
+- Keep private keys and service-role credentials in Supabase's server-side secrets only.
+- Keep `.env`, local tooling folders, and operating-system metadata out of version control; the repository's `.gitignore` already excludes common local-only files.
+- Keep the reminder-sending Edge Function protected so only the trusted scheduler or authorized operators can invoke it.
+- Review Supabase Row Level Security and function access settings before changing the reminder backend's deployment configuration.
+
+## Project status
+
+Nexa is an actively developed personal project. The current design prioritizes a responsive, local-first app experience with an optional serverless backend for background reminders. User accounts and general cloud synchronization are not currently part of the app.
