@@ -312,7 +312,8 @@
     const scheduled = scheduledHabitsForDate();
     el.innerHTML = scheduled.length ? '<div class="dash-habits">'+scheduled.map(h=>{
       const done = !!log[h.id];
-      const longTitle=String(h.name||'').trim().length>19||String(h.name||'').trim().split(/\\s+/).some(word=>word.length>15); return '<button type="button" class="dash-habit'+(done?' done':'')+(longTitle?' long-title':'')+'" data-habit="'+h.id+'"><span class="dash-habit-label">'+escapeHTML(h.name)+(h.time?'<small style="display:block;color:var(--muted);font-size:10px;margin-top:3px;">'+formatHabitTime(h.time)+'</small>':'')+'</span><span class="dash-habit-mark">'+(done?'✓':'')+'</span></button>';
+      const todayHabitTime=habitTimeForDate(h,new Date());
+      const longTitle=String(h.name||'').trim().length>19||String(h.name||'').trim().split(/\\s+/).some(word=>word.length>15); return '<button type="button" class="dash-habit'+(done?' done':'')+(longTitle?' long-title':'')+'" data-habit="'+h.id+'"><span class="dash-habit-label">'+escapeHTML(h.name)+(todayHabitTime?'<small style="display:block;color:var(--muted);font-size:10px;margin-top:3px;">'+formatHabitTime(todayHabitTime)+'</small>':'')+'</span><span class="dash-habit-mark">'+(done?'✓':'')+'</span></button>';
     }).join('')+'</div>' : '<div class="empty-state">No habits scheduled today.</div>';
     el.querySelectorAll('[data-habit]').forEach(btn=>btn.addEventListener('click', async ()=>{
       const key=todayKey(); if(!state.habitLogs[key]) state.habitLogs[key]={};
