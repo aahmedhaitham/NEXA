@@ -586,7 +586,9 @@ input[type="time"]{color-scheme:light;min-height:44px;max-width:100%;touch-actio
 .habit-paused-label{font-size:12px;color:var(--coral);font-weight:650;}
 #main-scroll{overscroll-behavior-y:auto!important;}
 
-/* Keep the app viewport painted during iOS scroll-to-top transitions */
+/* Keep the app viewport painted during iOS scroll-to-top transitions.
+   Avoid promoting the scrolling element with translateZ(0): Safari can leave
+   that composited layer black until the next user scroll after scrollTop resets. */
 html,body{background:#0B0C10;min-height:100%;overscroll-behavior:none;}
 .app-shell{height:100vh;height:100dvh;background-color:#0B0C10;}
-#main-scroll{background-color:#0B0C10;overscroll-behavior-y:auto!important;transform:translateZ(0);}
+#main-scroll{background-color:#0B0C10;overscroll-behavior-y:auto!important;-webkit-overflow-scrolling:touch;transform:none!important;}
