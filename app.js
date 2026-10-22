@@ -138,26 +138,7 @@
       btn.className = 'tabitem' + (t.id==='today'?' active':'');
       btn.dataset.tab = t.id;
       btn.innerHTML = icon(t.icon,24) + '<span>'+t.label+'</span>';
-      btn.addEventListener('click', ()=>{
-        const now = Date.now();
-        const previous = Number(btn.dataset.lastTap || 0);
-        btn.dataset.lastTap = String(now);
-        if(now - previous <= 450){
-          btn.dataset.lastTap = '0';
-          gotoPage(t.id);
-          const firstSubtab = {tasks:'list',health:'training',settings:'general'}[t.id];
-          if(firstSubtab) gotoSubtab(t.id, firstSubtab);
-          const scrollContainer = document.getElementById('main-scroll');
-          scrollContainer.scrollTop = 0;
-          scrollContainer.scrollTo(0, 0);
-          requestAnimationFrame(()=>{
-            scrollContainer.scrollTop = 0;
-            scrollContainer.scrollTo(0, 0);
-          });
-          return;
-        }
-        gotoPage(t.id);
-      });
+      btn.addEventListener('click', ()=>gotoPage(t.id));
       wrap.appendChild(btn);
     });
   }
@@ -209,9 +190,7 @@
     if(e.touches.length!==1) return;
     const y=e.touches[0].clientY, dy=y-mainTouchY;
     if(timePickerGesture||(document.activeElement&&document.activeElement.matches('input[type="time"]'))){mainTouchY=y;return;}
-    const atTop=mainScroll.scrollTop<=0;
-    const atBottom=mainScroll.scrollTop+mainScroll.clientHeight>=mainScroll.scrollHeight-1;
-    if((atTop&&dy>0)||(atBottom&&dy<0)) e.preventDefault();
+    // Avoid cancelling edge gestures on iOS; that can expose a black viewport.
     mainTouchY=y;
   },{passive:false});
 
@@ -239,11 +218,12 @@
   }
 
   function habitDayCode(d){ const map={0:'sun',1:'mon',2:'tue',3:'wed',4:'thu',5:'fri',6:'sat'}; return map[d.getDay()]; }
-  function habitStreak(h){let d=new Date();d.setHours(12,0,0,0);if(!habitIsScheduled(h,d)||!((state.habitLogs[dateKey(d)]||{})[h.id]))d.setDate(d.getDate()-1);let streak=0,guard=0;while(guard++<370){if(!habitIsScheduled(h,d)){d.setDate(d.getDate()-1);continue;}if((state.habitLogs[dateKey(d)]||{})[h.id]){streak++;d.setDate(d.getDate()-1);continue;}break;}return streak;}
+  function habitStreak(h){let d=new Date();d.setHours(12,0,0,0);if(!habitIsScheduled(h,d)||!((state.habitLogs[dateKey(d)]||{})[h.id]))d.setDate(d.getDate()-1);let streak=0,guard=0;while(guard++<740){if(habitPausedOnDate(h,d)||!habitIsScheduled(h,d)){d.setDate(d.getDate()-1);continue;}if((state.habitLogs[dateKey(d)]||{})[h.id]){streak++;d.setDate(d.getDate()-1);continue;}break;}return streak;}
   function renderCustomReminders(){}
   async function syncPushIfEnabled(){try{if('Notification'in window&&Notification.permission==='granted'){const reg=await navigator.serviceWorker.ready;await syncNexaPushSubscription(reg);}}catch(e){console.error('Reminder sync failed',e);}}
 
-  function habitIsScheduled(h,d=new Date()){ const days=Array.isArray(h.days)&&h.days.length?h.days:['daily']; return days.includes('daily')||days.includes(habitDayCode(d)); }
+  function habitPausedOnDate(h,d=new Date()){if(!h||!h.pauseStart||!h.pauseUntil)return false;const key=dateKey(d);return key>=h.pauseStart&&key<=h.pauseUntil;}
+  function habitIsScheduled(h,d=new Date()){ if(habitPausedOnDate(h,d))return false;const days=Array.isArray(h.days)&&h.days.length?h.days:['daily']; return days.includes('daily')||days.includes(habitDayCode(d)); }
   function habitTimeForDate(h,d=new Date()){const key=habitDayCode(d),weekly=h.weeklyTimes||{};return weekly[key]!==undefined?weekly[key]:(h.time||null);}
   function renderHabitWeeklyTimes(h={}){const wrap=document.getElementById('habit-weekly-times');if(!wrap)return;const weekly=h.weeklyTimes||{};const days=[['mon','Monday'],['tue','Tuesday'],['wed','Wednesday'],['thu','Thursday'],['fri','Friday'],['sat','Saturday'],['sun','Sunday']];wrap.innerHTML='<div class="habit-time-head">Optional: set a different time for each day</div>'+days.map(([key,label])=>'<label class="habit-time-row"><span>'+label+'</span><input type="time" data-habit-time-day="'+key+'" value="'+(weekly[key]===undefined?'':weekly[key])+'" aria-label="'+label+' reminder time"></label>').join('')+'<p class="habit-time-help">Leave a day blank to use the default time above.</p>';}
   function readHabitWeeklyTimes(){const result={},form=document.getElementById('habit-weekly-times');if(!form)return result;form.querySelectorAll('[data-habit-time-day]').forEach(input=>{if(input.value)result[input.dataset.habitTimeDay]=input.value;});return result;}
@@ -251,10 +231,12 @@
   function renderStatbar(){
     const scheduled=scheduledHabitsForDate();
     const doneToday = scheduled.filter(h=>(state.habitLogs[todayKey()]||{})[h.id]).length;
-    const tasksOpen = state.tasks.filter(t=>!t.done).length + state.subjectItems.filter(i=>!i.done).length;
+    const allTasks=[...state.tasks,...state.subjectItems];
+    const tasksDone=allTasks.filter(t=>t.done).length;
+    const tasksTotal=allTasks.length;
     const wrap = document.getElementById('statbar');
     wrap.innerHTML = '';
-    [['Open tasks',tasksOpen],['Habits today',doneToday+'/'+state.habits.length]]
+    [['Tasks',tasksDone+'/'+tasksTotal],['Habits today',doneToday+'/'+scheduled.length]]
       .forEach(([lbl,num])=>{
         const cell=document.createElement('div'); cell.className='statcell';
         cell.innerHTML='<div class="num">'+num+'</div><div class="lbl">'+lbl+'</div>';
@@ -594,7 +576,7 @@
     wrap.innerHTML = '';
     if(!state.habits.length){ wrap.innerHTML='<p>No habits yet.</p>'; return; }
     const week=[];{const today=new Date();today.setHours(12,0,0,0);const start=new Date(today);start.setDate(today.getDate()-((today.getDay()+1)%7));for(let i=0;i<7;i++){const d=new Date(start);d.setDate(start.getDate()+i);week.push(d);}}const month=[];for(let i=29;i>=0;i--){const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()-i);month.push(d);}
-    state.habits.forEach(h=>{const row=document.createElement('div');row.className='habit-progress-card';row.dataset.habitId=h.id;const streak=habitStreak(h);const dayCells=week.map(d=>{const key=dateKey(d),scheduled=habitIsScheduled(h,d),on=!!((state.habitLogs[key]||{})[h.id]);return '<button type="button" class="habit-day'+(on?' on':'')+(!scheduled?' muted':'')+(key===todayKey()?' today':'')+'" data-date="'+key+'" data-habit="'+h.id+'" '+(!scheduled?'disabled':'')+'><span>'+['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]+'</span><b>'+(on?'✓':d.getDate())+'</b></button>';}).join('');const monthCells=month.map(d=>{const key=dateKey(d),scheduled=habitIsScheduled(h,d),on=!!((state.habitLogs[key]||{})[h.id]);return '<button type="button" title="'+key+'" class="habit-month-day'+(on?' on':'')+(!scheduled?' muted':'')+'" data-date="'+key+'" data-habit="'+h.id+'" '+(!scheduled?'disabled':'')+'>'+d.getDate()+'</button>';}).join('');const scheduleLabel=(Array.isArray(h.days)&&h.days.length&&h.days[0]!=='daily')?h.days.map(x=>x.toUpperCase()).join(' · '):'Every day';row.innerHTML='<div class="habit-progress-head"><button type="button" class="habit-order-handle" title="Drag to reorder habits" aria-label="Drag to reorder '+escapeHTML(h.name)+'">⠿</button><div class="heat-name">'+escapeHTML(h.name)+(h.time||Object.keys(h.weeklyTimes||{}).length?'<div class="habit-time">'+(Object.keys(h.weeklyTimes||{}).length?'Custom times by day':formatHabitTime(h.time))+'</div>':'')+'<div class="habit-schedule">'+scheduleLabel+'</div></div><div class="heat-streak"><b>'+streak+'</b><span>day streak</span></div></div><div class="habit-week">'+dayCells+'</div><button type="button" class="btn ghost small habit-history-toggle" data-history="'+h.id+'">View 30-day history</button><div class="habit-month" data-month="'+h.id+'" hidden>'+monthCells+'</div><div class="item-actions"><button class="btn gray small" data-edit-habit="'+h.id+'">Edit</button><button class="btn gray small" data-del-habit="'+h.id+'">Delete</button></div>';wrap.appendChild(row);});
+    state.habits.forEach(h=>{const row=document.createElement('div');row.className='habit-progress-card';row.dataset.habitId=h.id;const streak=habitStreak(h);const dayCells=week.map(d=>{const key=dateKey(d),scheduled=habitIsScheduled(h,d),on=!!((state.habitLogs[key]||{})[h.id]);return '<button type="button" class="habit-day'+(on?' on':'')+(!scheduled?' muted':'')+(key===todayKey()?' today':'')+'" data-date="'+key+'" data-habit="'+h.id+'" '+(!scheduled?'disabled':'')+'><span>'+['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]+'</span><b>'+(on?'✓':d.getDate())+'</b></button>';}).join('');const monthCells=month.map(d=>{const key=dateKey(d),scheduled=habitIsScheduled(h,d),on=!!((state.habitLogs[key]||{})[h.id]);return '<button type="button" title="'+key+'" class="habit-month-day'+(on?' on':'')+(!scheduled?' muted':'')+'" data-date="'+key+'" data-habit="'+h.id+'" '+(!scheduled?'disabled':'')+'>'+d.getDate()+'</button>';}).join('');const scheduleLabel=(Array.isArray(h.days)&&h.days.length&&h.days[0]!=='daily')?h.days.map(x=>x.toUpperCase()).join(' · '):'Every day';row.innerHTML='<div class="habit-progress-head"><button type="button" class="habit-order-handle" title="Drag to reorder habits" aria-label="Drag to reorder '+escapeHTML(h.name)+'">⠿</button><div class="heat-name">'+escapeHTML(h.name)+(h.time||Object.keys(h.weeklyTimes||{}).length?'<div class="habit-time">'+(Object.keys(h.weeklyTimes||{}).length?'Custom times by day':formatHabitTime(h.time))+'</div>':'')+'<div class="habit-schedule">'+scheduleLabel+'</div></div><div class="heat-streak"><b>'+streak+'</b><span>day streak</span></div></div><div class="habit-week">'+dayCells+'</div><button type="button" class="btn ghost small habit-history-toggle" data-history="'+h.id+'">View 30-day history</button><div class="habit-month" data-month="'+h.id+'" hidden>'+monthCells+'</div><div class="habit-pause-controls">'+(habitPausedOnDate(h,new Date())?'<span class="habit-paused-label">Paused until '+escapeHTML(h.pauseUntil||'')+'</span><button type="button" class="btn small" data-resume-habit="'+h.id+'">Resume</button>':'<button type="button" class="btn gray small" data-pause-habit="'+h.id+'">Pause habit</button><input type="date" class="habit-pause-date" data-pause-date="'+h.id+'" min="'+todayKey()+'" value="'+todayKey()+'" hidden>')+'</div><div class="item-actions"><button class="btn gray small" data-edit-habit="'+h.id+'">Edit</button><button class="btn gray small" data-del-habit="'+h.id+'">Delete</button></div>';wrap.appendChild(row);});
     wrap.querySelectorAll('.habit-order-handle').forEach(grip=>grip.addEventListener('pointerdown',e=>{
       if(e.button!==0&&e.pointerType==='mouse')return;
       const row=grip.closest('.habit-progress-card[data-habit-id]');
@@ -666,6 +648,9 @@
       btn.textContent=box.hidden?'View 30-day history':'Hide 30-day history';
       btn.onclick=()=>{box.hidden=!box.hidden;btn.textContent=box.hidden?'View 30-day history':'Hide 30-day history';};
     });
+    wrap.querySelectorAll('[data-pause-habit]').forEach(btn=>btn.addEventListener('click',()=>{const input=wrap.querySelector('[data-pause-date="'+btn.dataset.pauseHabit+'"]');if(!input)return;input.hidden=false;input.focus();try{input.showPicker&&input.showPicker();}catch(_){};}));
+    wrap.querySelectorAll('[data-pause-date]').forEach(input=>input.addEventListener('change',async()=>{const until=input.value;if(!until||until<todayKey()){showToast('Choose today or a future date.');input.value=todayKey();return;}const h=state.habits.find(x=>x.id===input.dataset.pauseDate);if(!h)return;h.pauseStart=todayKey();h.pauseUntil=until;await save('habits',state.habits);renderHabitGrid();renderStatbar();renderDashboard();showToast('Habit paused. Your streak is protected.');}));
+    wrap.querySelectorAll('[data-resume-habit]').forEach(btn=>btn.addEventListener('click',async()=>{const h=state.habits.find(x=>x.id===btn.dataset.resumeHabit);if(!h)return;const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);if(h.pauseStart&&h.pauseStart<todayKey()){h.pauseUntil=dateKey(yesterday);}else{delete h.pauseStart;delete h.pauseUntil;}await save('habits',state.habits);renderHabitGrid();renderStatbar();renderDashboard();showToast('Habit resumed.');}));
     wrap.querySelectorAll('[data-edit-habit]').forEach(btn=>btn.addEventListener('click',()=>{
       const h=state.habits.find(x=>x.id===btn.dataset.editHabit);if(!h)return;
       document.getElementById('habit-edit-id').value=h.id;document.getElementById('habit-in-name').value=h.name;document.getElementById('habit-in-time').value=h.time||'';renderHabitWeeklyTimes(h);
