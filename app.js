@@ -174,28 +174,14 @@
   }
 
   const mainScroll=document.getElementById('main-scroll');
-  let mainTouchY=0, timePickerGesture=false;
-  mainScroll.addEventListener('touchstart',e=>{
-    if(e.touches.length===1) mainTouchY=e.touches[0].clientY;
-    const target=e.target;
-    timePickerGesture=!!(target&&target.closest&&target.closest('input[type="time"]'));
-  },{passive:true});
+  let timePickerGesture=false;
   document.addEventListener('focusin',e=>{
     if(e.target&&e.target.matches&&e.target.matches('input[type="time"]')) timePickerGesture=true;
   });
   document.addEventListener('focusout',e=>{
     if(e.target&&e.target.matches&&e.target.matches('input[type="time"]')) setTimeout(()=>{timePickerGesture=false;},250);
   });
-  mainScroll.addEventListener('touchmove',e=>{
-    if(e.touches.length!==1) return;
-    const y=e.touches[0].clientY, dy=y-mainTouchY;
-    if(timePickerGesture||(document.activeElement&&document.activeElement.matches('input[type="time"]'))){mainTouchY=y;return;}
-    // Avoid cancelling edge gestures on iOS; that can expose a black viewport.
-    mainTouchY=y;
-  },{passive:false});
-
   const tabbarLock=document.getElementById('tabbar');
-  tabbarLock.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
   tabbarLock.addEventListener('dragstart',e=>e.preventDefault());
   tabbarLock.addEventListener('contextmenu',e=>e.preventDefault());
 
@@ -204,12 +190,7 @@
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.getElementById('page-'+id).classList.add('active');
     const scrollContainer = document.getElementById('main-scroll');
-    scrollContainer.scrollTop = 0;
-    scrollContainer.scrollTo(0, 0);
-    requestAnimationFrame(()=>{
-      scrollContainer.scrollTop = 0;
-      scrollContainer.scrollTo(0, 0);
-    });
+    if(scrollContainer) scrollContainer.scrollTop = 0;
     if(id==='today') renderDashboard();
     if(id==='calendar') renderAllCalendarBits();
     if(SUBTAB_STATE[id]){
